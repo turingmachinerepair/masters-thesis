@@ -1,3 +1,5 @@
+package org.thesis.octans.Arbiter;
+
 import com.fasterxml.jackson.annotation.JsonSetter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;

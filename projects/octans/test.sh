@@ -1,3 +1,5 @@
 #!/bin/sh
-
-curl  http://localhost:8080/commit_task POST -d "{ "taskName": "e16c", "semanticTaskName": "E16C prototype set" }"
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"taskName":"e16c","semanticTaskName":"E16C Compilation"}' \
+  http://localhost:8080/commit_task

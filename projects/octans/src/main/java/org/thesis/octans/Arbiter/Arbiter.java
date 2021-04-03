@@ -1,8 +1,10 @@
+package org.thesis.octans.Arbiter;
 
 import java.lang.reflect.Member;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
+import jdk.jfr.Enabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.BindingResult;
@@ -21,13 +23,11 @@ import javax.xml.ws.Binding;
  * kafka consumer - in independent thread - consumes messages about task updates
  * kafka consumer - heartbeat
  */
-
+@Enabled
 @RestController
 public class Arbiter {
 
-
-
-    ConcurrentLinkedQueue pendingTasks;
+    ConcurrentLinkedQueue pendingTasks = new ConcurrentLinkedQueue();
 
     /**
      * REST controller
@@ -35,13 +35,13 @@ public class Arbiter {
     private final AtomicLong counter = new AtomicLong();
 
     @Autowired
-    TaskTicketValidator taskValidator;
+    TaskTicketValidator taskValidator = new TaskTicketValidator();
 
     //@GetMapping("/heartbeat")
 
     @PostMapping(path = "/commit_task", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public TaskTicket commitTask(@RequestBody TaskTicket ticket, BindingResult result ) {
-
+        System.out.println("New task request");
         taskValidator.validate(ticket,result);
         ticket.setTaksID( counter.getAndIncrement() );
 
