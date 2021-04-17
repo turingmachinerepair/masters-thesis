@@ -14,10 +14,12 @@ services:
         published: 9094
         protocol: tcp
         mode: host
+    depends_on:
+     - zookeeper
     deploy:
       mode: global
       labels:
-        feature.description: "Frontend"
+        feature.description: "Kafka"
       update_config:
         parallelism: 1
         delay: 10s
@@ -37,10 +39,12 @@ services:
   storage:
     image: minio/minio
     ports:
-     - target: 3000
-       published: 3000
+     - target: 9000
+       published: 9000
        protocol: tcp
        mode: host
+    expose:
+      - "9000"
     deploy:
       mode: global
       labels:
@@ -50,13 +54,12 @@ services:
         delay: 10s
       restart_policy:
         condition: any
-    environment:
-       HOSTNAME_COMMAND: "minio server /project_root "
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+    command: server /data
+#    healthcheck:
+ #     test: ["CMD", "curl", "-f", "http://localhost:3000/minio/health/live"]
+  #    interval: 30s
+    #  timeout: 20s
+      #retries: 3
 
       
       
@@ -73,8 +76,7 @@ services:
         delay: 10s
       restart_policy:
         condition: any  
-    environment:
-      HOSTNAME_COMMAND: "bash"
+    command: bash
     volumes:
        - "quartus-volume:/opt/quartus"
       
@@ -82,8 +84,9 @@ services:
   worker:
     image: fpga-base
     tty: true
-    environment:
-      HOSTNAME_COMMAND: "bash"
+    deploy:
+      replicas: 4
+    command: bash
     depends_on:
       - instrumentation
       - storage
