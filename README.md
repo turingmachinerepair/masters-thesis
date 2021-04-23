@@ -9,3 +9,13 @@ containers - файлы для генерации docker образов для q
 - [x] Quartus 19.1 
 - [ ] Quartus 18.0
 - [ ] Quartus 18.0 Prime Pro лицензированный
+
+## 2. Сервисы
+- [ ] Arbiter
+- [ ] Node 
+- [ ] Worker
+
+
+## 3. Инфраструктура
+- [ ] Compose системы
+- [ ] Compose узлов
