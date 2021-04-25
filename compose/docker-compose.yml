@@ -1,40 +1,6 @@
 version: '3.2'
 services:
-#kafka resource manager
-  zookeeper:
-    image: wurstmeister/zookeeper
-    ports:
-      - "2181:2181"
-      
-#kafka worker
-  kafka:
-    image: wurstmeister/kafka:latest
-    ports:
-      - target: 9094
-        published: 9094
-        protocol: tcp
-        mode: host
-    depends_on:
-     - zookeeper
-    deploy:
-      mode: global
-      labels:
-        feature.description: "Kafka"
-      update_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: any  
-    environment:
-      HOSTNAME_COMMAND: "hostname | awk -F'-' '{print $$2}'"
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
-      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
-      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      
+
 #minio storage instance
   storage:
     image: minio/minio
@@ -61,41 +27,3 @@ services:
     #  timeout: 20s
       #retries: 3
 
-      
-      
-#quartus image
-  instrumentation:
-    image: quartus:19.1
-    tty: true
-    deploy:
-      mode: global
-      labels:
-        feature.description: "Instrumentation"
-      update_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: any  
-    command: bash
-    volumes:
-       - "quartus-volume:/opt/quartus"
-      
-#worker image      
-  worker:
-    image: fpga-base
-    tty: true
-    deploy:
-      replicas: 4
-    command: bash
-    depends_on:
-      - instrumentation
-      - storage
-    volumes:
-       - "quartus-volume:/opt/quartus:ro"
-
-#node manager image (WIP)
-       
-volumes:
-  quartus-volume:
-  storage-volume:
-    
