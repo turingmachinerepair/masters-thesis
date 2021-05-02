@@ -1,10 +1,11 @@
-package org.thesis.functionary.Functionary;
-
+package org.thesis.functionary.Tickets;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import lombok.Data;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.Errors;
 
+@Data
 public class TaskTicket {
 
     private long taskId;

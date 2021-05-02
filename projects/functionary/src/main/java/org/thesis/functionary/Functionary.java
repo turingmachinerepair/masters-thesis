@@ -1,4 +1,4 @@
-package org.thesis.functionary.Functionary;
+package org.thesis.functionary;
 
 import java.lang.reflect.Member;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -15,7 +15,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import org.thesis.functionary.Functionary.KafkaProducerConfig;
+import org.thesis.functionary.Kafka.KafkaProducerConfig;
+import org.thesis.functionary.Tickets.CompilationTaskTicket;
+import org.thesis.functionary.Tickets.TaskTicketValidator;
+import org.thesis.functionary.Tickets.TaskTicket;
+import org.thesis.functionary.Tickets.TaskTicketValidator;
 
 import javax.xml.ws.Binding;
 
@@ -39,12 +43,13 @@ import javax.xml.ws.Binding;
 @Enabled
 @RestController
 public class Functionary {
-
     String topicName = "TaskFabric";
+    MinIOAdapter minioAdapter = new MinIOAdapter();
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
     public void sendMessage(String msg) {
+
         kafkaTemplate.send(topicName, msg);
     }
 
@@ -61,6 +66,24 @@ public class Functionary {
         System.out.println("New task request");
         taskValidator.validate(ticket, result);
         ticket.setTaksID(counter.getAndIncrement());
+        System.out.println( ticket.toString() );
+
+        String[] compilationTaskNames = minioAdapter.resolveProjectTemplate( ticket.getTaskName() );
+
+        for( int i=0;i<compilationTaskNames.length; i++){
+            String projectName = compilationTaskNames[i];
+            String projectPath = minioAdapter.resolveProjectPath( ticket.getTaskName(), projectName );
+            CompilationTaskTicket compilationTask = new CompilationTaskTicket(counter.getAndIncrement(),
+                    projectName,
+                    projectPath,7
+                    );
+            System.out.println("Created "+compilationTask.toString() +" UUID:"+compilationTask.getUUID() );
+            minioAdapter.putCompilationTaskTicket(compilationTask);
+            System.out.println("Put task to minio" );
+            sendMessage(compilationTask.getUUID());
+            System.out.println("Created kafka message");
+
+        }
 
 
         if (result.hasErrors()) {

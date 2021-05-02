@@ -1,4 +1,4 @@
-package org.thesis.functionary.Functionary;
+package org.thesis.functionary.Kafka;
 
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -13,7 +13,7 @@ import java.util.Map;
 @Configuration
 public class KafkaTopicConfig {
     
-    @Value(value = "${kafka.bootstrapAddress}")
+    @Value(value = "127.0.0.1:9094")
     private String bootstrapAddress;
 
     @Bean

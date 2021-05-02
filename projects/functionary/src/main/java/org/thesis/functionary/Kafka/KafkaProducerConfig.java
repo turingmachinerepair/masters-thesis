@@ -1,4 +1,4 @@
-package org.thesis.functionary.Functionary;
+package org.thesis.functionary.Kafka;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -14,7 +14,7 @@ import java.util.Map;
 @Configuration
 public class KafkaProducerConfig {
 
-    String bootstrapAddress = "localhost:9000";
+    String bootstrapAddress = "127.0.0.1:9094";
     @Bean
     public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();

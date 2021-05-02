@@ -1,5 +1,4 @@
-package org.thesis.functionary.Functionary;
-
+package org.thesis.functionary.Tickets;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;

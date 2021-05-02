@@ -1,6 +1,44 @@
 version: '3.2'
 services:
-
+#kafka resource manager
+  zookeeper:
+    image: wurstmeister/zookeeper
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+      
+#kafka worker
+  kafka:
+    image: wurstmeister/kafka:latest
+    hostname: kafka
+    ports:
+      - target: 9094
+        published: 9094
+        protocol: tcp
+        mode: host
+    expose:
+      - "9094"
+    depends_on:
+     - zookeeper
+    deploy:
+      labels:
+        feature.description: "Kafka"
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: any  
+    environment:
+      HOSTNAME_COMMAND: "hostname | awk -F'-' '{print $$2}'"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ADVERTISED_HOST_NAME: 10.0.0.50
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      
 #minio storage instance
   storage:
     image: minio/minio
@@ -12,7 +50,6 @@ services:
     expose:
       - "9000"
     deploy:
-      mode: global
       labels:
         feature.description: "Storage"
       update_config:
@@ -21,9 +58,9 @@ services:
       restart_policy:
         condition: any
     command: server /data
-#    healthcheck:
- #     test: ["CMD", "curl", "-f", "http://localhost:3000/minio/health/live"]
-  #    interval: 30s
-    #  timeout: 20s
-      #retries: 3
 
+      
+volumes:
+  quartus-volume:
+  storage-volume:
+    
