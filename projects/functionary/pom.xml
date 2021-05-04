@@ -25,7 +25,11 @@
 			<groupId>org.springframework.kafka</groupId>
 			<artifactId>spring-kafka</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -46,7 +50,13 @@
 			<artifactId>minio</artifactId>
 			<version>8.2.1</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.thesis</groupId>
+			<artifactId>common</artifactId>
+			<systemPath>/home/phdinintegrals/DiplomProjects/common/target/common-0.0.1-SNAPSHOT.jar</systemPath>
+			<version>0.0.1-SNAPSHOT</version>
+			<scope>system</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -5,7 +5,7 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import org.springframework.util.SerializationUtils;
 import org.springframework.util.StreamUtils;
-import org.thesis.functionary.Tickets.CompilationTaskTicket;
+import org.thesis.common.Tickets.CompilationTaskTicket;
 import sun.misc.IOUtils;
 
 import java.io.ByteArrayInputStream;

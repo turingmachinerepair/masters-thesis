@@ -16,10 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import org.thesis.functionary.Kafka.KafkaProducerConfig;
-import org.thesis.functionary.Tickets.CompilationTaskTicket;
+import org.thesis.common.Tickets.CompilationTaskTicket;
 import org.thesis.functionary.Tickets.TaskTicketValidator;
 import org.thesis.functionary.Tickets.TaskTicket;
 import org.thesis.functionary.Tickets.TaskTicketValidator;
+
+import org.apache.commons.lang3.RandomStringUtils;
+
+import sun.misc.IOUtils;
 
 import javax.xml.ws.Binding;
 
@@ -43,6 +47,7 @@ import javax.xml.ws.Binding;
 @Enabled
 @RestController
 public class Functionary {
+    String serviceIdentificator;
     String topicName = "TaskFabric";
     MinIOAdapter minioAdapter = new MinIOAdapter();
     @Autowired
@@ -63,6 +68,8 @@ public class Functionary {
 
     @PostMapping(path = "/commit_task", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public TaskTicket commitTask(@RequestBody TaskTicket ticket, BindingResult result ) {
+        serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
+
         System.out.println("New task request");
         taskValidator.validate(ticket, result);
         ticket.setTaksID(counter.getAndIncrement());
@@ -73,7 +80,9 @@ public class Functionary {
         for( int i=0;i<compilationTaskNames.length; i++){
             String projectName = compilationTaskNames[i];
             String projectPath = minioAdapter.resolveProjectPath( ticket.getTaskName(), projectName );
-            CompilationTaskTicket compilationTask = new CompilationTaskTicket(counter.getAndIncrement(),
+            CompilationTaskTicket compilationTask = new CompilationTaskTicket(
+                    serviceIdentificator,
+                    counter.getAndIncrement(),
                     projectName,
                     projectPath,7
                     );
