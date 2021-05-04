@@ -10,7 +10,7 @@ services:
 #kafka worker
   kafka:
     image: wurstmeister/kafka:latest
-    hostname: kafka
+    #hostname: kafka
     ports:
       - target: 9094
         published: 9094
@@ -32,10 +32,10 @@ services:
       HOSTNAME_COMMAND: "hostname | awk -F'-' '{print $$2}'"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://localhost:9094
       KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
-      KAFKA_ADVERTISED_HOST_NAME: 10.0.0.50
+      #KAFKA_ADVERTISED_HOST_NAME: 10.0.0.50
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       
