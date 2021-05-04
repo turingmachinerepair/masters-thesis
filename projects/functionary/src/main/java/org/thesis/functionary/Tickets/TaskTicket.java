@@ -6,12 +6,19 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.Errors;
 
 @Data
-public class TaskTicket {
+public class TaskTicket implements java.io.Serializable  {
 
     private long taskId;
     private String taskName;
     private String taskSemanticName;
     private String protoProjectName;
+
+    public TaskTicket(){
+        taskId = 0L;
+        taskName = "";
+        taskSemanticName = "";
+        protoProjectName = "";
+    }
 
     public TaskTicket(long _taskId, String _taskName, String _taskSemanticName){
         taskId = _taskId;
