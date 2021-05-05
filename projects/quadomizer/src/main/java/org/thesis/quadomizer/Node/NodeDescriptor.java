@@ -28,7 +28,7 @@ public class NodeDescriptor{
     boolean evaluateDeploymentPossibility( CompilationTaskContext task){
         int avalRAM = RAM - ReservedRAM;
         int avalCPU = CPU - ReservedCPU;
-        if( avalRAM > task.getDigest().getRAM() && avalCPU > task.getDigest().getCPUs() ){
+        if( avalRAM >= task.getDigest().getRAM() && avalCPU >= task.getDigest().getCPUs() ){
             return true;
         }
         return false;

@@ -16,7 +16,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
-i
+
 import org.thesis.common.Tickets.*;
 import sun.misc.IOUtils;
 import org.thesis.quadomizer.Node.NodeManager;
@@ -36,7 +36,7 @@ public class Quadomizer {
     MinIOAdapter minioInstance;
     String topicName = "TaskFabric";
     DockerClient dockerClient;
-    NodeManager resourceManager;
+    final NodeManager resourceManager;
     HashMap<String,String> assignedContainers;
     HashMap<String,CompilationTaskContext> taskContexts;
 
@@ -76,15 +76,10 @@ public class Quadomizer {
         String projectPath = ticket.getProjectPath();
         String stage;
         String fpgaType;
-        int taskStage = -1;
+
         //Evaluate stage
-        boolean[] currentStages = ticket.getCurrentStages();
-        boolean[] plannedStages = ticket.getNecessaryStages();
-        for(int i=0; i< currentStages.length && taskStage == -1; i++){
-            if( !currentStages[i] && plannedStages[i]){
-                taskStage = i;
-            }
-        }
+
+        System.out.println("Infer FPGA type");
         //Evaluate FPGA type
         if( projectPath.contains("S10")) {
             fpgaType = "S10";
@@ -95,7 +90,11 @@ public class Quadomizer {
         }
 
         //Set resource constraints
-        STAGES taskStageEnum = STAGES.values()[taskStage];
+        STAGES taskStageEnum = ticket.getNextStage();
+        res.setStage(taskStageEnum);
+        System.out.println("Target stage: " + taskStageEnum);
+
+
         if( fpgaType.equals( "S10") ){
             res.setFPGAType(fpgaType);
 
@@ -154,42 +153,97 @@ public class Quadomizer {
         CompilationTaskDigest digest = createDigestForTask(ticket);
         CompilationTaskContext taskContext = new CompilationTaskContext(ticket,digest);
         System.out.println("Full task context:"+taskContext.toString());
+        String hostname = "";
+        try{
+            synchronized (resourceManager){
 
-        boolean deploymentPossible = resourceManager.evaluateDeploymentPossibility(taskContext);
-        System.out.println("Resource manager snapshot:"+resourceManager.toString());
+                while( resourceManager.isOpInProgress() ){
+                    resourceManager.wait();
+                }
 
+                hostname = resourceManager.deployTask(taskContext);
+
+                resourceManager.notifyAll();
+
+            }
+        } catch( Exception e){
+            System.out.println( e.toString() );
+            hostname = "";
+        }
+
+
+        boolean deploymentPossible = ( !hostname.isEmpty() );
+        boolean deploymentSuccessful = false;
         if( deploymentPossible ){
-            String hostname = resourceManager.deployTask(taskContext);
             System.out.println("Deployment possible on hostname "+hostname);
-            this.deployTask(taskContext,hostname);
+            System.out.println("Resource manager snapshot:"+resourceManager.toString());
+            deploymentSuccessful = this.deployTask(taskContext,hostname);
+        }
+
+        if( deploymentPossible && !deploymentSuccessful ){
+            System.out.println("Resources were allocated, but deployment unsuccessful. Return resources.");
+
+            try{
+                synchronized (resourceManager){
+
+                    while( resourceManager.isOpInProgress() ){
+                        resourceManager.wait();
+                    }
+
+                    resourceManager.freeTask(taskContext);
+
+                    resourceManager.notifyAll();
+
+                }
+            } catch( Exception e){
+
+            }
+
+
+
+        }
+
+        if( deploymentPossible && deploymentSuccessful ) {
+            ticket.setCurrentState(STATES.PROCESSING);
+            ticket.setHostname(hostname);
+            ticket.setCurrentStage( digest.getStage() );
+            minioInstance.putCompilationTaskTicket(ticket);
         } else {
             System.out.println("Deployment impossible. Return ticket to fabric");
+            ticket.setCurrentState(STATES.QUEUED);
+            minioInstance.putCompilationTaskTicket(ticket);
             sendMessage(UUID);
         }
    }
 
-    void deployTask(CompilationTaskContext task, String hostname){
+    boolean deployTask(CompilationTaskContext task, String hostname){
         /*TODO: quartus container logic with:
         1) s3fs mount src and project buckets
         2) set env variables with paths to mounted buckets
         3) form command.
         */
         //create container
-        System.out.println("Create container");
-        CreateContainerResponse container = dockerClient.createContainerCmd("hello-world").exec();
-        dockerClient.startContainerCmd(container.getId()).exec();
+        try{
+            System.out.println("Create container");
+            CreateContainerResponse container = dockerClient.createContainerCmd("hello-world").exec();
+            dockerClient.startContainerCmd(container.getId()).exec();
 
-        System.out.println("Store data. Hostname:"+ hostname + " Container ID:"+container.getId() );
-        taskContexts.put( task.getTicket().getUUID() , task);
-        assignedContainers.put( task.getTicket().getUUID(), container.getId() );
-        System.out.println("Task reference snapshot:" + taskContexts.toString());
-        System.out.println("Container reference snapshot:" + assignedContainers.toString());
+            System.out.println("Store data. Hostname:"+ hostname + " Container ID:"+container.getId() );
+            taskContexts.put( task.getTicket().getUUID() , task);
+            assignedContainers.put( task.getTicket().getUUID(), container.getId() );
+            System.out.println("Task reference snapshot:" + taskContexts.toString());
+            System.out.println("Container reference snapshot:" + assignedContainers.toString());
 
-        System.out.println("Register callback. Master ID:"+this.getServiceIdentificator());
-        DockerContainerCallback resultCallback = new DockerContainerCallback(this, task.getTicket().getUUID() );
-        dockerClient.waitContainerCmd( container.getId() ).exec(resultCallback);
-        System.out.println("Task deployed");
+            System.out.println("Register callback. Master ID:"+this.getServiceIdentificator());
+            DockerContainerCallback resultCallback = new DockerContainerCallback(this, task.getTicket().getUUID() );
+            dockerClient.waitContainerCmd( container.getId() ).exec(resultCallback);
+            System.out.println("Task deployed");
+        } catch( Exception e){
+            System.out.println(e.toString() );
+            return false;
+        }
 
+        return true;
     }
 
 
@@ -219,26 +273,54 @@ public class Quadomizer {
            System.out.println("Success.New stage:"+ Integer.toString(lastStage + 1));
            System.out.println("Task vectors:"+ Arrays.toString(stageVector));
            System.out.println("Target vector:"+ Arrays.toString(targetVector));
-            stageVector[lastStage] = true;
+           int lastStageIndex = ticket.getNextStageIndex();
+           STAGES taskStage = context.getDigest().getStage();
 
-            ticket.setLastStage( lastStage +1 );
+            stageVector[lastStageIndex] = true;
+
+            ticket.setLastStage( lastStageIndex );
             ticket.setCurrentStages( stageVector );
             ticket.setError(false);
-            if( targetVector != stageVector ){
+
+            if( !Arrays.equals(targetVector, stageVector)){
                 System.out.println("Ticket not finished, retranslation necessary.");
                 ticketRetranslate = true;
+                ticket.setCurrentState(STATES.QUEUED);
+                ticket.setHostname("");
+            } else {
+                System.out.println("Ticket fully finished.");
+                ticket.setCurrentState(STATES.FINISHED);
+                ticket.setHostname("");
             }
 
         } else {
 
            System.out.println("Error on processing ticket, refer to logs.");
            ticket.setError(true);
+           ticket.setCurrentState(STATES.FINISHED);
+           ticket.setHostname("");
+
         }
 
        System.out.println("Update ticket in MinIO");
        minioInstance.putCompilationTaskTicket(ticket);
        System.out.println("Free resources");
-       resourceManager.freeTask(context);
+       try{
+           synchronized (resourceManager){
+
+               while( resourceManager.isOpInProgress() ){
+                   resourceManager.wait();
+               }
+
+               resourceManager.freeTask(context);
+
+               resourceManager.notifyAll();
+
+           }
+       } catch( Exception e){
+
+       }
+
        System.out.println("Res manager snapshot:" + resourceManager.toString() );
 
        System.out.println("Killing container.");
@@ -251,18 +333,6 @@ public class Quadomizer {
 
        if( ticketRetranslate ){
            sendMessage(UUID);
-       }
-
-   }
-
-   void run(){
-       int i=1;
-       try{
-           while(true){
-               i*=-1;
-           }
-       } catch( Exception e){
-           System.out.println(e.toString() );
        }
 
    }
