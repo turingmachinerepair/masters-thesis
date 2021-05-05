@@ -1,12 +1,11 @@
 package org.thesis.quadomizer;
 
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.CreateContainerCmd;
-import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.InspectContainerResponse;
-import com.github.dockerjava.api.command.WaitContainerResultCallback;
+import com.github.dockerjava.api.command.*;
+import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DockerClientBuilder;
 
+import com.github.dockerjava.core.exec.InspectServiceCmdExec;
 import io.minio.GetObjectArgs;
 import io.minio.PutObjectArgs;
 import jdk.jfr.Enabled;
@@ -24,9 +23,7 @@ import sun.net.ResourceManager;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
 @Enabled
 @Service
@@ -38,6 +35,7 @@ public class Quadomizer {
     DockerClient dockerClient;
     final NodeManager resourceManager;
     HashMap<String,String> assignedContainers;
+    HashMap<String,String> assignedServices;
     HashMap<String,CompilationTaskContext> taskContexts;
 
 
@@ -55,11 +53,17 @@ public class Quadomizer {
 
        serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
 
-        minioInstance = new MinIOAdapter();
+       minioInstance = new MinIOAdapter();
        dockerClient = DockerClientBuilder.getInstance().build();
        assignedContainers = new HashMap<String,String>();
+       assignedServices = new HashMap<String,String>();
        taskContexts = new HashMap<String,CompilationTaskContext>();
-       resourceManager = new NodeManager();
+
+       List<SwarmNode> nodes = dockerClient.listSwarmNodesCmd().exec();
+       resourceManager = new NodeManager(nodes);
+
+       System.out.println( "Registered nodes:" + resourceManager.toString() );
+
    }
 
    public String getServiceIdentificator(){
@@ -224,20 +228,49 @@ public class Quadomizer {
         */
         //create container
         try{
-            System.out.println("Create container");
-            CreateContainerResponse container = dockerClient.createContainerCmd("hello-world").exec();
-            dockerClient.startContainerCmd(container.getId()).exec();
+            System.out.println("Create service");
+            //CreateContainerResponse container = dockerClient.createContainerCmd("hello-world").exec();
+            String cmd = "";    //quartus + proc constraints + stage
+            String env = "";    //path to src, path to projects
 
-            System.out.println("Store data. Hostname:"+ hostname + " Container ID:"+container.getId() );
+            String serviceName = "service-"+task.getTicket().getUUID();
+            ContainerSpec ct = new ContainerSpec().withImage("quartus:19.1").
+                    withCommand(Collections.singletonList(cmd)).
+                    withEnv(Collections.singletonList(env));
+
+            ServicePlacement sp = new ServicePlacement().withConstraints(Collections.singletonList("node.hostname==" + hostname));
+            TaskSpec tt = new TaskSpec().withContainerSpec(ct).withPlacement(sp);
+            ServiceSpec ss = new ServiceSpec().withTaskTemplate(tt).withName( serviceName );
+            CreateServiceResponse serviceResponse = dockerClient.createServiceCmd(ss).exec();
+            String serviceID = serviceResponse.getId();
+
+            String containerID = "";
+            List<Container> res = dockerClient.listContainersCmd().withNameFilter( Collections.singletonList("name="+serviceName) ).exec();
+            if( res.size() >0 ){
+                System.out.println("Container ready.");
+                containerID = res.get(0).getId();
+            } else {
+                System.out.println("No container.");
+                throw new Exception("Container for service not created");
+            }
+
+            //CreateContainerResponse container = dockerClient.createContainerCmd("hello-world").exec();
+
+            //dockerClient.startContainerCmd(container.getId()).exec();
+
+            System.out.println("Store data. Hostname:"+ hostname + " Container ID:"+ containerID + " Service ID:" + serviceID );
             taskContexts.put( task.getTicket().getUUID() , task);
-            assignedContainers.put( task.getTicket().getUUID(), container.getId() );
+            assignedContainers.put( task.getTicket().getUUID(), containerID );
+            assignedServices.put( task.getTicket().getUUID(), serviceID );
             System.out.println("Task reference snapshot:" + taskContexts.toString());
             System.out.println("Container reference snapshot:" + assignedContainers.toString());
+            System.out.println("Services reference snapshot:" + assignedContainers.toString());
 
             System.out.println("Register callback. Master ID:"+this.getServiceIdentificator());
             DockerContainerCallback resultCallback = new DockerContainerCallback(this, task.getTicket().getUUID() );
-            dockerClient.waitContainerCmd( container.getId() ).exec(resultCallback);
+            dockerClient.waitContainerCmd( containerID ).exec(resultCallback);
             System.out.println("Task deployed");
+
         } catch( Exception e){
             System.out.println(e.toString() );
             return false;
@@ -328,6 +361,7 @@ public class Quadomizer {
 
        System.out.println("Remove container reference");
        assignedContainers.remove(UUID);
+       assignedServices.remove(UUID);
        System.out.println("Remove task reference");
        taskContexts.remove(UUID);
 

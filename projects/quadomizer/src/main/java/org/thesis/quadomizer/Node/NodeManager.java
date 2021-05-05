@@ -1,11 +1,14 @@
 package org.thesis.quadomizer.Node;
 
+import com.github.dockerjava.api.model.SwarmNode;
 import lombok.Data;
 import org.thesis.quadomizer.Node.NodeDescriptor;
 import org.thesis.common.Tickets.CompilationTaskContext;
 import org.thesis.common.Tickets.CompilationTaskDigest;
 
 import javax.xml.soap.Node;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 @Data
@@ -23,6 +26,37 @@ public class NodeManager{
         nodes = Arrays.asList(node1,node2,node3);
         tasks = new HashMap<String,Integer>();
         opInProgress = false;
+    }
+
+    public NodeManager(List<SwarmNode> nodesList ){
+        tasks = new HashMap<String,Integer>();
+        nodes = new LinkedList<NodeDescriptor>();
+        opInProgress = false;
+
+        long nanoCpuDivisor = 1000000000L;
+        long RAMDivisor = 1048576L;
+        for( SwarmNode node: nodesList){
+            try{
+
+                String hostname = node.getDescription().getHostname();
+                long nanoCPU = node.getDescription().getResources().getNanoCPUs();
+                long ramBytes = node.getDescription().getResources().getMemoryBytes();
+                System.out.println( hostname
+                        + " " +  nanoCPU
+                        + " " +  ramBytes );
+
+
+                int CPUs = Math.toIntExact( nanoCPU / nanoCpuDivisor );
+                System.out.print("+");
+                int RAM = Math.toIntExact(ramBytes / RAMDivisor);
+                System.out.print("+");
+                NodeDescriptor localNode = new NodeDescriptor( hostname, CPUs, RAM );
+                System.out.println("New node:" +  localNode.toString() );
+                nodes.add(localNode);
+            } catch( Exception e) {
+                System.out.println(e.toString() );
+            }
+        }
     }
     
     public boolean evaluateDeploymentPossibility( CompilationTaskContext task){
@@ -55,7 +89,7 @@ public class NodeManager{
                 nodeName = node.getName();
                 deployed = true;
             }
-            
+
         }
 
         System.out.println("Post-deploy tasks: "+ tasks.toString() );
