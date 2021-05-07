@@ -1,8 +1,13 @@
 package org.thesis.quadomizer;
 
+import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.WaitContainerResultCallback;
 
-public class DockerContainerCallback extends WaitContainerResultCallback {
+import java.io.Closeable;
+import java.io.IOException;
+
+
+public class DockerContainerCallback implements ResultCallback {
     Quadomizer masterReference;
     String UUID;
 
@@ -14,8 +19,29 @@ public class DockerContainerCallback extends WaitContainerResultCallback {
     }
 
     @Override
-    public void onComplete() {
+    public void onStart(Closeable closeable) {
+
+    }
+
+    @Override
+    public void onNext(Object o) {
+
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+
         masterReference.updateTaskStatus(UUID);
     }
 
+    @Override
+    public void onComplete() {
+
+        masterReference.updateTaskStatus(UUID);
+    }
+
+    @Override
+    public void close() throws IOException {
+
+    }
 }
