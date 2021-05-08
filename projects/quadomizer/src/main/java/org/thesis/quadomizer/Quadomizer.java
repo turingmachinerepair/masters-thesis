@@ -1,6 +1,7 @@
 package org.thesis.quadomizer;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
@@ -177,6 +178,7 @@ public class Quadomizer {
         CompilationTaskTicket ticket = minioInstance.getCompilationTaskTicket(UUID);
         if( ticket.getUUID().equals(emptyTicket.getUUID() ) ){
             System.out.println("Kafka has obsolete task with UUID:"+UUID+", discard it.");
+            return;
         }
         CompilationTaskDigest digest = createDigestForTask(ticket);
         CompilationTaskContext taskContext = new CompilationTaskContext(ticket,digest);
@@ -229,9 +231,7 @@ public class Quadomizer {
 
 
 
-        }
-
-        if( deploymentPossible && deploymentSuccessful ) {
+        } else if( deploymentPossible && deploymentSuccessful ) {
             ticket.setCurrentState(STATES.PROCESSING);
             ticket.setHostname(hostname);
             ticket.setCurrentStage( digest.getStage() );
@@ -250,38 +250,59 @@ public class Quadomizer {
         try{
             System.out.println("Create service");
             //command
-            String cmd = "bash /root/quartus_wrapper.sh \"/prototype_root"+ task.getTicket().getProjectPath()+"\" "
-                            +task.getTicket().getProjectName() +" " + task.getTicket().getNextStageIndex() + " " + task.getTicket().getUUID();
+            String cmd = "/bin/bash /root/quartus_wrapper.sh \"/prototype_root/"+ task.getTicket().getProjectPath()+"\" "
+                            +task.getTicket().getProjectName() +" " +
+                    task.getTicket().getNextStageIndex() + " " +
+                    task.getDigest().getCPUs() + " " +
+                    task.getTicket().getUUID();
 
             //networks
             List<NetworkAttachmentConfig> nets = new ArrayList<>(
-                    Arrays.asList( new NetworkAttachmentConfig().withTarget("host")  )
+                    Collections.singletonList(new NetworkAttachmentConfig().withTarget("host"))
             );
 
             String serviceName = "service-"+task.getTicket().getUUID();
 
             //placement
             ServicePlacement sp = new ServicePlacement().withConstraints(Collections.singletonList("node.hostname==" + hostname));
+            RestartPolicy restartPolicy = RestartPolicy.noRestart();
+            ContainerSpecConfig contConfig = new ContainerSpecConfig();
+
+            //mount
+            Mount mnt = new Mount().
+                    withType( MountType.BIND ).
+                    withSource("/tmp/s3mount0").
+                    withTarget("/prototype_root");
+            List<Mount> mounts = new LinkedList<Mount>(Collections.singletonList(mnt));
 
             //container spec
-            ContainerSpec ct = new ContainerSpec().withImage("phdinintegrals/quartus-masters:19.1-wrapper").
-                    withCommand(Collections.singletonList(cmd)).withTty(true);
+            ContainerSpec ct = new ContainerSpec().
+                    withImage("phdinintegrals/quartus-masters:19.1-wrapper").
+                    withCommand(Collections.singletonList(cmd)).
+                    withTty(true).
+                    withMounts(mounts);
+
             //task spec
-            TaskSpec tt = new TaskSpec().withContainerSpec(ct).withPlacement(sp);
+            TaskSpec tt = new TaskSpec().
+                    withContainerSpec(ct).
+                    withPlacement(sp);
+
             //service spec
-            ServiceSpec ss = new ServiceSpec().withTaskTemplate(tt).withName( serviceName ).withNetworks(nets);
+            ServiceSpec ss = new ServiceSpec().
+                    withTaskTemplate(tt).
+                    withName( serviceName ).
+                    withNetworks(nets);
 
             //deploy service
-            CreateServiceResponse serviceResponse = dockerClient.createServiceCmd(ss).exec();
+            CreateServiceResponse serviceResponse = dockerClient.createServiceCmd(ss).withServiceSpec(ss).exec();
             String serviceID = serviceResponse.getId();
-
+            Thread.sleep(5000);
             //infer containerID from service (guaranteed to contain service's name)
             String containerID = "";
             List<Task> tasks = dockerClient.listTasksCmd().withServiceFilter(serviceID).exec();
 
             if( tasks.size() >0 ){
                 System.out.println("Container ready.");
-                tasks.get(0).getStatus().getContainerStatus().getExitCodeLong();
                 containerID = tasks.get(0).getId();
             } else {
                 System.out.println("No container.");
@@ -296,15 +317,13 @@ public class Quadomizer {
             System.out.println("Container reference snapshot:" + assignedContainers.toString());
             System.out.println("Services reference snapshot:" + assignedContainers.toString());
 
-            //TODO: how to register finished service?
-
 
             //Implement event watcher for new task and register callback
             System.out.println("Register callback. Master ID:"+this.getServiceIdentificator());
             DockerContainerCallback resultCallback = new DockerContainerCallback(this, task.getTicket().getUUID() );
 
             dockerClient.eventsCmd().withContainerFilter("com.docker.swarm.task.id=="+tasks.get(0).getId()).
-                    withEventFilter("die","stop","kill").exec(resultCallback);
+                    withEventFilter("die","stop","kill").exec( resultCallback );
             System.out.println("Task deployed");
 
         } catch( Exception e){

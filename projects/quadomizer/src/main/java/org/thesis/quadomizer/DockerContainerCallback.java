@@ -2,12 +2,13 @@ package org.thesis.quadomizer;
 
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.WaitContainerResultCallback;
+import com.github.dockerjava.core.command.EventsResultCallback;
 
 import java.io.Closeable;
 import java.io.IOException;
 
 
-public class DockerContainerCallback implements ResultCallback {
+public class DockerContainerCallback extends EventsResultCallback {
     Quadomizer masterReference;
     String UUID;
 
@@ -20,11 +21,6 @@ public class DockerContainerCallback implements ResultCallback {
 
     @Override
     public void onStart(Closeable closeable) {
-
-    }
-
-    @Override
-    public void onNext(Object o) {
 
     }
 
