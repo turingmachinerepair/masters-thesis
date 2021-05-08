@@ -3,9 +3,14 @@ package org.thesis.quadomizer;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.*;
+import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 
+import com.github.dockerjava.core.DockerClientConfig;
+import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.exec.InspectServiceCmdExec;
+import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
+import com.github.dockerjava.transport.DockerHttpClient;
 import io.minio.GetObjectArgs;
 import io.minio.PutObjectArgs;
 import jdk.jfr.Enabled;
@@ -56,7 +61,20 @@ public class Quadomizer {
        serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
 
        minioInstance = new MinIOAdapter();
-       dockerClient = DockerClientBuilder.getInstance().build();
+
+       DockerClientConfig custom = DefaultDockerClientConfig.createDefaultConfigBuilder()
+               .withDockerHost("unix:///var/run/docker.sock")
+               .build();
+
+       DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+               .dockerHost(custom.getDockerHost())
+               .sslConfig(custom.getSSLConfig())
+               .maxConnections(100)
+               .build();
+
+       dockerClient = DockerClientImpl.getInstance(custom, httpClient);
+
+
        assignedContainers = new Hashtable<String,String>();
        assignedServices = new Hashtable<String,String>();
        taskContexts = new Hashtable<String,CompilationTaskContext>();
