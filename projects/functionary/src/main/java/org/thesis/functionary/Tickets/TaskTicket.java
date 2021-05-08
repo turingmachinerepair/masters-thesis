@@ -11,23 +11,23 @@ public class TaskTicket implements java.io.Serializable  {
     private long taskId;
     private String taskName;
     private String taskSemanticName;
-    private String protoProjectName;
+    private String footnote;
 
     public TaskTicket(){
         taskId = 0L;
         taskName = "";
         taskSemanticName = "";
-        protoProjectName = "";
+        footnote = "";
     }
 
-    public TaskTicket(long _taskId, String _taskName, String _taskSemanticName){
+    public TaskTicket(long _taskId, String _taskName, String _taskSemanticName,String footnote){
         taskId = _taskId;
         taskName = _taskName;
         taskSemanticName = _taskSemanticName;
-        protoProjectName = "";
+        this.footnote = footnote;
     }
 
-    public void setTaksID(long _id){
+    public void setTasksID(long _id){
         taskId = _id;
     }
 
@@ -43,9 +43,10 @@ public class TaskTicket implements java.io.Serializable  {
         this.taskSemanticName = semanticName;
     }
 
+    @JsonSetter
+    public void setFootnote(String fnote){
 
-    public void setProtoProjectName(String _protoProjectName){
-        protoProjectName = _protoProjectName;
+        footnote = fnote;
     }
 
     public long getTaskId(){

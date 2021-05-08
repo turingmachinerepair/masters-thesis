@@ -6,7 +6,6 @@ import org.springframework.util.SerializationUtils;
 import org.springframework.util.StreamUtils;
 import org.thesis.common.Tickets.CompilationTaskTicket;
 import org.thesis.functionary.Tickets.ExtendedTaskTicket;
-import sun.misc.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -51,43 +50,37 @@ class MinIOAdapter{
     */
     String resolveProjectPath( String projectTemplateName, String projectName) {
         String bucket = "src";
-        String path = bucket +"/firmware/parcing/result/"+projectTemplateName+"/"+projectName;
-        return path;
+        return bucket +"/processor_test/"+projectTemplateName+"/"+projectName;
     }
     
     /**
     *   resolve list of project names for prototype name, e.g.
-    *   e16c = hmu, xmu, tile, eioh, xmu_com
-    *   e2c3 = uncore, tile, eioh
     */
     String[] resolveProjectTemplate( String projectTemplateName){
-        String[] strings = {};
-        switch( projectTemplateName ){
+        ArrayList<String> resPrototype = new ArrayList<>();
+        ListObjectsArgs args = ListObjectsArgs.builder().bucket("src").prefix("processor_test/" + projectTemplateName).build();
+        Iterable<Result<Item>> results = minioClient.listObjects(args);
 
-            case("e16c"):
-            case("e12c"): {
-                strings = new String[]{
-                        "tile", "xmu", "hmu", "xmu_com", "eioh"
-                };
-                break;
-            }
-            case("e2c3"):{
-                strings = new String[]{
-                        "tile", "uncore", "eioh"
-                };
-            }
-            default:{
-                strings = new String[]{};
+        for( Result<Item> obj : results){
+            try{
+                if( obj.get().isDir() ){
+                    String subres = obj.get().objectName();
+                    resPrototype.add(subres);
+                    System.out.println(subres);
+                }
+
+            } catch( Exception e) {
+                System.out.println(e.toString() );
             }
         }
 
-        return strings;
+        return resPrototype.toArray(new String[0]);
     }
  
     /**
     *   Put CompilationTaskTicket to "tickets" bucket
     */
-    String putCompilationTaskTicket( CompilationTaskTicket object){
+    void putCompilationTaskTicket(CompilationTaskTicket object){
         String uuid = object.getUUID();
 
         byte[] data = SerializationUtils.serialize(object);
@@ -108,7 +101,6 @@ class MinIOAdapter{
         }
 
 
-        return uuid;
     }
     
     /**
@@ -130,7 +122,7 @@ class MinIOAdapter{
         return new CompilationTaskTicket();
     }
 
-    String putExtendedTaskTicket(ExtendedTaskTicket obj){
+    void putExtendedTaskTicket(ExtendedTaskTicket obj){
         String uuid = obj.getUUID();
 
         byte[] data = SerializationUtils.serialize(obj);
@@ -151,7 +143,6 @@ class MinIOAdapter{
         }
 
 
-        return uuid;
     }
 
     ExtendedTaskTicket getExtendedTaskTicket( String UUID ){

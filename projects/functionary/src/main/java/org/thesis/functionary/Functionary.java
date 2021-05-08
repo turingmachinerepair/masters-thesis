@@ -1,11 +1,9 @@
 package org.thesis.functionary;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import io.minio.MakeBucketArgs;
 import jdk.jfr.Enabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -13,11 +11,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import org.thesis.functionary.Kafka.KafkaProducerConfig;
 import org.thesis.common.Tickets.CompilationTaskTicket;
 import org.thesis.functionary.Tickets.*;
 import org.thesis.functionary.Tickets.TaskTicketValidator;
@@ -52,6 +48,8 @@ public class Functionary {
     private KafkaTemplate<String, String> kafkaTemplate;
 
     public Functionary() {
+        serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
+
         minioAdapter.init();
     }
 
@@ -71,11 +69,10 @@ public class Functionary {
 
     @PostMapping(path = "/commit_task", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public TaskTicket commitTask(@RequestBody TaskTicket ticket, BindingResult result) {
-        serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
 
         System.out.println("New task request");
         taskValidator.validate(ticket, result);
-        ticket.setTaksID(counter.getAndIncrement());
+        ticket.setTasksID(counter.getAndIncrement());
         System.out.println(ticket.toString());
 
         String[] compilationTaskNames = minioAdapter.resolveProjectTemplate(ticket.getTaskName());

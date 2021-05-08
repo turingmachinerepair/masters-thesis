@@ -18,7 +18,7 @@ public class ExtendedTaskTicket extends  TaskTicket implements java.io.Serializa
     }
 
     public ExtendedTaskTicket( TaskTicket tt){
-        super.setProtoProjectName( tt.getProtoProjectName() );
+        super.setFootnote( tt.getFootnote() );
         super.setTaskId( tt.getTaskId() );
         super.setTaskName( tt.getTaskName() );
         super.setTaskSemanticName( tt.getTaskSemanticName() );
