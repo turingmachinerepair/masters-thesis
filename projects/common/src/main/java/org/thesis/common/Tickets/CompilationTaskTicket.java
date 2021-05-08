@@ -31,8 +31,8 @@ class CompilationTaskTicket implements java.io.Serializable {
          processingServerName="";
          projectName="";
          projectPath="";
-         necessaryStages = new boolean[8];
-         currentStages = new boolean[8];
+         necessaryStages = new boolean[4];
+         currentStages = new boolean[4];
          Arrays.fill(necessaryStages,false);
          Arrays.fill(currentStages,false);
          error = false;
@@ -49,8 +49,8 @@ class CompilationTaskTicket implements java.io.Serializable {
         ID = _ID;
         projectName=_projectName;
         projectPath= _projectPath;
-        necessaryStages = new boolean[8];
-        currentStages = new boolean[8];
+        necessaryStages = new boolean[4];
+        currentStages = new boolean[4];
         Arrays.fill(necessaryStages,0,lastNecessaryStage,true);
         Arrays.fill(currentStages,false);
         error = false;

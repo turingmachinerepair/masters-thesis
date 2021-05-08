@@ -58,13 +58,18 @@ class MinIOAdapter{
     */
     String[] resolveProjectTemplate( String projectTemplateName){
         ArrayList<String> resPrototype = new ArrayList<>();
-        ListObjectsArgs args = ListObjectsArgs.builder().bucket("src").prefix("processor_test/" + projectTemplateName).build();
+        String prefix = "processor_test/" + projectTemplateName+"/";
+        System.out.println("Resolve project:" + projectTemplateName +" Prefix:"+prefix);
+        ListObjectsArgs args = ListObjectsArgs.builder().bucket("src").prefix(prefix).build();
         Iterable<Result<Item>> results = minioClient.listObjects(args);
-
+        System.out.println(results.toString() );
         for( Result<Item> obj : results){
             try{
                 if( obj.get().isDir() ){
                     String subres = obj.get().objectName();
+                    String[] folders = subres.split("/");
+                    subres = folders[ folders.length - 1 ];
+
                     resPrototype.add(subres);
                     System.out.println(subres);
                 }
@@ -73,8 +78,10 @@ class MinIOAdapter{
                 System.out.println(e.toString() );
             }
         }
+        String[] res = new String[resPrototype.size()];
+        res = resPrototype.toArray(res);
 
-        return resPrototype.toArray(new String[0]);
+        return res;
     }
  
     /**

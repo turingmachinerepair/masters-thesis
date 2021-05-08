@@ -85,7 +85,7 @@ public class Functionary {
                     serviceIdentificator,
                     counter.getAndIncrement(),
                     projectName,
-                    projectPath, 7
+                    projectPath, 4
             );
 
             System.out.println("Created " + compilationTask.toString() + " UUID:" + compilationTask.getUUID());
