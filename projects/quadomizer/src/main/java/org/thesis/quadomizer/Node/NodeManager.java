@@ -34,7 +34,7 @@ public class NodeManager{
         opInProgress = false;
 
         long nanoCpuDivisor = 1000000000L;
-        long RAMDivisor = 1048576L;
+        long RAMDivisor = 1073741824;
         for( SwarmNode node: nodesList){
             try{
 
