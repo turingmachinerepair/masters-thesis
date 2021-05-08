@@ -173,7 +173,11 @@ public class Quadomizer {
    public void receiveTask(@Payload String UUID){
 
         System.out.println("Received task, UUID:"+UUID);
+        CompilationTaskTicket emptyTicket = new CompilationTaskTicket();
         CompilationTaskTicket ticket = minioInstance.getCompilationTaskTicket(UUID);
+        if( ticket.getUUID().equals(emptyTicket.getUUID() ) ){
+            System.out.println("Kafka has obsolete task with UUID:"+UUID+", discard it.");
+        }
         CompilationTaskDigest digest = createDigestForTask(ticket);
         CompilationTaskContext taskContext = new CompilationTaskContext(ticket,digest);
         System.out.println("Full task context:"+taskContext.toString());
