@@ -104,7 +104,7 @@ public class Quadomizer {
         if( fpgaType.equals( "S10") ){
             res.setFPGAType(fpgaType);
 
-            if( taskStageEnum == STAGES.Place || taskStageEnum == STAGES.Route ){
+            if( taskStageEnum == STAGES.Fit ){
                 res.setCPUs(16);
                 res.setRAM(40);
             } else if( taskStageEnum == STAGES.Synthesis) {
@@ -118,7 +118,7 @@ public class Quadomizer {
         } else if( fpgaType.equals( "A10") ){
             res.setFPGAType(fpgaType);
 
-            if( taskStageEnum == STAGES.Place || taskStageEnum == STAGES.Route ){
+            if( taskStageEnum == STAGES.Fit ){
                 res.setCPUs(8);
                 res.setRAM(20);
             } else if( taskStageEnum == STAGES.Synthesis) {
@@ -131,7 +131,7 @@ public class Quadomizer {
 
         } else {
 
-            if( taskStageEnum == STAGES.Place || taskStageEnum == STAGES.Route ){
+            if( taskStageEnum == STAGES.Fit){
                 res.setCPUs(4);
                 res.setRAM(5);
             } else if( taskStageEnum == STAGES.Synthesis) {
