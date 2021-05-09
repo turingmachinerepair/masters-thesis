@@ -21,23 +21,28 @@ public class DockerContainerCallback extends EventsResultCallback {
 
     @Override
     public void onStart(Closeable closeable) {
+        System.out.println("Callback triggered close");
 
+        masterReference.updateTaskStatus(UUID);
     }
 
     @Override
     public void onError(Throwable throwable) {
+        System.out.println("Callback triggered error");
 
         masterReference.updateTaskStatus(UUID);
     }
 
     @Override
     public void onComplete() {
+        System.out.println("Callback triggered complete");
 
         masterReference.updateTaskStatus(UUID);
     }
 
     @Override
     public void close() throws IOException {
+        System.out.println("Callback triggered close");
 
     }
 }

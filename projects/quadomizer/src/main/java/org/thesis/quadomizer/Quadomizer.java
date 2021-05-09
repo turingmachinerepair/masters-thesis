@@ -248,13 +248,38 @@ public class Quadomizer {
 
         //create container
         try{
+            STAGES stage = task.getTicket().getNextStage();
+            int nextStage = 0;
+            if( stage == STAGES.Synthesis)
+                nextStage = 1;
+            else if (stage == STAGES.Fit )
+                nextStage = 2;
+            else if (stage == STAGES.TimingAnalysis )
+                nextStage = 3;
+            else if (stage == STAGES.Assembler)
+                nextStage = 4;
+            String strStage = String.valueOf(nextStage);
+
             System.out.println("Create service");
             //command
-            String cmd = "/bin/bash /root/quartus_wrapper.sh \"/prototype_root/"+ task.getTicket().getProjectPath()+"\" "
+            String cpuStr =  String.valueOf( task.getDigest().getCPUs() );
+            String flowID = strStage;
+            List<String> cmd = new ArrayList<>(
+                    Arrays.asList(
+                    "/bin/bash",
+                    "/root/quartus_wrapper.sh",
+                    "/prototype_root"+ task.getTicket().getProjectPath(),
+                    task.getTicket().getProjectName(),
+                    cpuStr,
+                            flowID,
+                    task.getTicket().getUUID()
+                    ) );
+
+            /*String cmd = "/bin/bash /root/quartus_wrapper.sh \"/prototype_root/"+ task.getTicket().getProjectPath()+"\" "
                             +task.getTicket().getProjectName() +" " +
                     task.getTicket().getNextStageIndex() + " " +
                     task.getDigest().getCPUs() + " " +
-                    task.getTicket().getUUID();
+                    task.getTicket().getUUID();*/
 
             //networks
             List<NetworkAttachmentConfig> nets = new ArrayList<>(
@@ -265,7 +290,7 @@ public class Quadomizer {
 
             //placement
             ServicePlacement sp = new ServicePlacement().withConstraints(Collections.singletonList("node.hostname==" + hostname));
-            RestartPolicy restartPolicy = RestartPolicy.noRestart();
+            ServiceRestartPolicy restartPolicy = new ServiceRestartPolicy().withMaxAttempts(0L);
             ContainerSpecConfig contConfig = new ContainerSpecConfig();
 
             //mount
@@ -277,15 +302,15 @@ public class Quadomizer {
 
             //container spec
             ContainerSpec ct = new ContainerSpec().
-                    withImage("phdinintegrals/quartus-masters:19.1-wrapper").
-                    withCommand(Collections.singletonList(cmd)).
+                    withImage("phdinintegrals/quartus-masters:19.1-wrapper2").
+                    withCommand( cmd ).
                     withTty(true).
                     withMounts(mounts);
 
             //task spec
             TaskSpec tt = new TaskSpec().
                     withContainerSpec(ct).
-                    withPlacement(sp);
+                    withPlacement(sp).withRestartPolicy(restartPolicy);
 
             //service spec
             ServiceSpec ss = new ServiceSpec().
@@ -321,9 +346,10 @@ public class Quadomizer {
             //Implement event watcher for new task and register callback
             System.out.println("Register callback. Master ID:"+this.getServiceIdentificator());
             DockerContainerCallback resultCallback = new DockerContainerCallback(this, task.getTicket().getUUID() );
-
-            dockerClient.eventsCmd().withContainerFilter("com.docker.swarm.task.id=="+tasks.get(0).getId()).
-                    withEventFilter("die","stop","kill").exec( resultCallback );
+            dockerClient.eventsCmd().
+                    withContainerFilter("task.id="+tasks.get(0).getId()).
+                    withEventFilter("die").
+                            exec( resultCallback );
             System.out.println("Task deployed");
 
         } catch( Exception e){

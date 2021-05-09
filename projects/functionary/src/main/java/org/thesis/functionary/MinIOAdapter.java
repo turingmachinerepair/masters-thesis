@@ -49,8 +49,7 @@ class MinIOAdapter{
     *   Resolve path to project from projectTemplateName and projectName
     */
     String resolveProjectPath( String projectTemplateName, String projectName) {
-        String bucket = "src";
-        return bucket +"/processor_test/"+projectTemplateName+"/"+projectName;
+        return "/processor_test/"+projectTemplateName+"/"+projectName;
     }
     
     /**
