@@ -32,32 +32,74 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+/**
+ * Класс - ядро сервиса, реализующий прикладную логику микросервиса
+ */
 @Enabled
 @Service
 public class Quadomizer {
 
+    /**
+     * Имя сервиса
+     */
     String serviceIdentificator;
+
+    /**
+     * Экземпляр S3 клиента
+     */
     MinIOAdapter minioInstance;
+
+    /**
+     * Имя темы Kafka откуда читаются UUID задач и куда возвращаются UUID задач
+     */
     String topicName = "TaskFabric";
+
+    /**
+     * Экземпляр клиента docker
+     */
     DockerClient dockerClient;
+
+    /**
+     * Экземпляр диспетчера ресурсов кластера
+     */
     final NodeManager resourceManager;
 
+    /**
+     * ID контейнеров назначенных на задачу.
+     * @deprecated
+     */
     Hashtable<String,String> assignedContainers;
+
+    /**
+     * ID сервисов назначенных на задачи. Ключ = UUID, значение = ID service на swarm
+     */
     Hashtable<String,String> assignedServices;
+    /**
+     * Справочник контекстов активных задач
+     */
     Hashtable<String,CompilationTaskContext> taskContexts;
 
-
+    /**
+     * Экземпляр издателя Kafka
+     */
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-
+    /**
+     * Публикация UUID в очередь брокера Kafka
+     * Применяется если запуск задачи на кластере невозможен или этап успешно завершен, но нужно выполнить следующий этап.
+     * @param msg UUID задачи на компиляцию ПЛИС
+     */
     public void sendMessage(String msg) {
 
         kafkaTemplate.send(topicName, msg);
 
     }
 
-   public Quadomizer(){
+    /**
+     * Конструктор по-умолчанию
+     */
+    public Quadomizer(){
 
        serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
 
@@ -87,14 +129,18 @@ public class Quadomizer {
 
    }
 
+    /**
+     * Получить уникальное имя экземпляра сервиса
+     * @return имя сервиса
+     */
    public String getServiceIdentificator(){
         return serviceIdentificator;
    }
 
     /**
-     * Construct compilation task digest based on type and stage necessary
-     * @param ticket
-     * @return
+     * Оценить ресурсы необходимые для нужного этапа задачи на компиляцию
+     * @param ticket задача этап которой надо выполнить
+     * @return экземпляр оценки ресурсов для этапа
      */
     CompilationTaskDigest createDigestForTask(CompilationTaskTicket ticket){
         CompilationTaskDigest res = new CompilationTaskDigest();
@@ -166,10 +212,10 @@ public class Quadomizer {
     }
 
     /**
-     * Receive method for Kafka. Either deploy task or return it to broker.
-     * @param UUID
+     * Метод-подписчик брокера Kafka, тема TaskFabric
+     * Чтение UUID задач которые находятся в очереди на исполнение
+     * @param UUID UUID задачи которую нужно выполнить
      */
-
     @KafkaListener(topics = "TaskFabric", groupId = "dispatchers")
    public void receiveTask(@Payload String UUID){
 
@@ -244,6 +290,12 @@ public class Quadomizer {
         }
    }
 
+    /**
+     * Запустить задачу на кластере
+     * @param task экземпляр контекста задачи
+     * @param hostname имя узла
+     * @return флаг успеха запуска задачи. true=получилось, false=возникла ошибка
+     */
     boolean deployTask(CompilationTaskContext task, String hostname){
 
         //create container
@@ -362,7 +414,8 @@ public class Quadomizer {
 
 
     /**
-     * Upon getting the compilation result - update ticket
+     * Обновить состояние задачи и загрузить его в S3
+     * @param UUID UUID задачи
      */
    public void updateTaskStatus(String UUID){
        System.out.println("Task "+UUID+" finished");

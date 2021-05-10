@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * @deprecated
+ */
 public class DockerSwarmAdapter{
 
     public boolean deployJob(CompilationTaskTicket task, CompilationTaskDigest taskDigest, String nodeConstraint){

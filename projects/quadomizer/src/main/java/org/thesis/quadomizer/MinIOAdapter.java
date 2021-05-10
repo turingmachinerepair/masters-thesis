@@ -25,7 +25,7 @@ class MinIOAdapter{
     }
     
     /**
-    *   Resolve path to project from projectTemplateName and projectName
+    *   @deprecated
     */
     String resolveProjectPath( String projectTemplateName, String projectName) {
         String bucket = "src";
@@ -34,9 +34,7 @@ class MinIOAdapter{
     }
     
     /**
-    *   resolve list of project names for prototype name, e.g.
-    *   e16c = hmu, xmu, tile, eioh, xmu_com
-    *   e2c3 = uncore, tile, eioh
+    *  @deprecated
     */
     String[] resolveProjectTemplate( String projectTemplateName){
         String[] strings = {};

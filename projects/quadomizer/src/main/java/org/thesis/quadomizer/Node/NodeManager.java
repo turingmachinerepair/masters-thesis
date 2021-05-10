@@ -11,14 +11,30 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 
+/**
+ * Диспетчер вычислительных ресурсов кластера.
+ */
 @Data
 public class NodeManager{
 
+    /**
+     * Флаг блокировки контекста класса
+     */
     boolean opInProgress;
+
+    /**
+     * Список дескрипторов вычислительных узлов в кластере Swarm
+     */
     List<NodeDescriptor> nodes;
+
+    /**
+     *
+     */
     HashMap<String, Integer> tasks;
 
-    //TODO: Replace with autofill from dockerClient
+    /**
+     * Конструктор по-умолчанию
+     */
     public NodeManager(){
         NodeDescriptor node1 = new NodeDescriptor("native-d8", 24,64);
         NodeDescriptor node2 = new NodeDescriptor("var2-vm5",6,20);
@@ -28,6 +44,10 @@ public class NodeManager{
         opInProgress = false;
     }
 
+    /**
+     * Конструктор из списка узлов Swarm
+     * @param nodesList список экземпляров дескрипторов вычислитенльых узлов
+     */
     public NodeManager(List<SwarmNode> nodesList ){
         tasks = new HashMap<String,Integer>();
         nodes = new LinkedList<NodeDescriptor>();
@@ -58,7 +78,13 @@ public class NodeManager{
             }
         }
     }
-    
+
+    /**
+     * Оценить возможность выполнения задачи на кластере
+     * @param task экземпляр контекста задачи на компиляцию ПЛИС
+     * @return возможность выполнения на кластере. true=возможно, false=нет
+     * @deprecated
+     */
     public boolean evaluateDeploymentPossibility( CompilationTaskContext task){
 
         ListIterator<NodeDescriptor> it = nodes.listIterator();
@@ -70,6 +96,12 @@ public class NodeManager{
         return false;
     }
 
+    /**
+     * Оценить возможность выполнения задачи на кластере и если можно - запустить
+     * @param task экземпляр полного контекста задачи компиляции ПЛИС
+     * @return имя узла на котором запущена задача. Пустая строка если выполнение невозможно.
+     */
+    //TODO: фильтрация по доле свободной памяти
     public String deployTask( CompilationTaskContext task){
         opInProgress = true;
         System.out.println("Pre-deploy tasks: "+ tasks.toString() );
@@ -98,6 +130,10 @@ public class NodeManager{
         return nodeName;
     }
 
+    /**
+     * Освободить зарезервированные для задачи ресурсы на узле
+     * @param task контекст задачи ресурсы которой освобождаются
+     */
     public void freeTask( CompilationTaskContext task){
         opInProgress = true;
         System.out.println("Freeing task "+task.getTicket().getUUID() );

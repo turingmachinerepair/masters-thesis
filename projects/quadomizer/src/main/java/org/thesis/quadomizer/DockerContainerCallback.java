@@ -7,9 +7,20 @@ import com.github.dockerjava.core.command.EventsResultCallback;
 import java.io.Closeable;
 import java.io.IOException;
 
+/**
+ * Класс обратного вызова при окончании работы над задачей Swarm
+ * Наследник {@link com.github.dockerjava.core.command.EventsResultCallback}
+ */
 
 public class DockerContainerCallback extends EventsResultCallback {
+    /**
+     * Ссылка на экземпляр ядра микросервиса
+     */
     Quadomizer masterReference;
+
+    /**
+     * UUID задачи состояние которой надо обновить по изменению её статуса
+     */
     String UUID;
 
     public DockerContainerCallback( Quadomizer master, String _UUID){
@@ -23,7 +34,7 @@ public class DockerContainerCallback extends EventsResultCallback {
     public void onStart(Closeable closeable) {
         System.out.println("Callback triggered close");
 
-        masterReference.updateTaskStatus(UUID);
+        //masterReference.updateTaskStatus(UUID);
     }
 
     @Override
@@ -43,6 +54,6 @@ public class DockerContainerCallback extends EventsResultCallback {
     @Override
     public void close() throws IOException {
         System.out.println("Callback triggered close");
-
+        masterReference.updateTaskStatus(UUID);
     }
 }
