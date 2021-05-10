@@ -2,6 +2,9 @@ package org.thesis.common.Tickets;
 
 import lombok.Data;
 
+/**
+ * Класс полного контекста задачи компиляции. Содержит экземпляр задачи и экземпляр оценки ресурсов на её выполнение
+ */
 @Data
 public class CompilationTaskContext{
  

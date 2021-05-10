@@ -6,26 +6,78 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 
+/**
+ * Класс описатель задачи компиляции проекта ПЛИС FPGA
+ * Реализует интерфейс java.io.Serializable
+ */
 public @Data
 class CompilationTaskTicket implements java.io.Serializable {
     //Desciptive attributes
+    /**
+     * Имя сервиса, сформировавшего экземпляр
+     */
     String processingServerName;
+
+    /**
+     * Числовой идентификатор задачи
+     */
     long ID;
+
+    /**
+     * Имя проекта
+     */
     String projectName;
+
+    /**
+     * Путь в S3 бакете до проекта
+     */
     String projectPath;
+
+    /**
+     * Массив флагов этапов компиляции которые нужно выполнить
+     * Индекс соответствуют объявлениям в {@link org.thesis.common.Tickets.STAGES}
+     */
     boolean[] necessaryStages;
+
+    /**
+     * Массив флагов этапов компиляции которые выполнены.
+     * Индекс соответствуют объявлениям в {@link org.thesis.common.Tickets.STAGES}
+     */
     boolean[] currentStages;
     
     //Result attributes
+    /**
+     * Флаг признака что последний этап не был завершен.
+     * Индекс проваленного этапа можно получить через
+     */
     boolean error;
+    /**
+     * Последний успешно выполненный этап
+     */
     int lastStage;
     
     //State attributes
+    /**
+     * Текущий выполняемый этап
+     */
     STAGES currentStage;
+    /**
+     * Текущее состояние задачи
+     */
     STATES currentState;
+    /**
+     * Имя сервера на котором выполняется (выполнялась) задача
+     */
     String hostname;
+
+    /**
+     * Оценка времени
+     */
     int estTime;
 
+    /**
+     * Конструктор по-умолчанию
+     */
      public CompilationTaskTicket(){
          ID = 0L;
          processingServerName="";
@@ -44,6 +96,14 @@ class CompilationTaskTicket implements java.io.Serializable {
          estTime = 0;
      }
 
+    /**
+     * Конструктор из значений
+     * @param _processingServerName сервер формирования экземпляра
+     * @param _ID числовой идентификатор
+     * @param _projectName имя проекта
+     * @param _projectPath путь проекта
+     * @param lastNecessaryStage последний этап который надо выполнить
+     */
     public CompilationTaskTicket(String _processingServerName,long _ID, String _projectName, String _projectPath, int lastNecessaryStage){
         processingServerName = _processingServerName;
         ID = _ID;
@@ -62,13 +122,20 @@ class CompilationTaskTicket implements java.io.Serializable {
          estTime = 0;
     }
 
+    /**
+     * Получить уникальный идентификатор задачи
+     * @return строка UUID
+     */
      public String getUUID(){
-         Long lID = ID;
-         String res = processingServerName +"-" + projectName + "-" + lID.toString();
-         return res;
+         long lID = ID;
+         return processingServerName +"-" + projectName + "-" + Long.toString(lID);
      }
-     
-     public int getNextStageIndex(){
+
+    /**
+     * Получить индекс следующего этапа компиляции проекта.
+     * @return индекс следующего этапа компиляции. -1, если задача готова.
+     */
+    public int getNextStageIndex(){
         int taskStage = -1;
         for(int i=0; i< currentStages.length && taskStage == -1; i++){
             System.out.println( "\t" + currentStages[i] + "/"+ necessaryStages[i]);
@@ -78,8 +145,12 @@ class CompilationTaskTicket implements java.io.Serializable {
         }
         return taskStage;
      }
-     
-     public STAGES getNextStage(){
+
+    /**
+     * Получить значение типа STAGES следующего этапа компиляции проекта
+     * @return значение перечисление этапов соответствующее следующему этапу компиляции
+     */
+    public STAGES getNextStage(){
         int taskStage = getNextStageIndex();
         if( taskStage == -1){
             return STAGES.NAN;
