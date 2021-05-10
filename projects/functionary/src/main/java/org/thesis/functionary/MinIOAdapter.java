@@ -11,9 +11,18 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.*;
 
+/**
+ * Адаптер MinIO, реализующий прикладную логику работы с S3
+ */
 class MinIOAdapter{
+    /**
+     * Экземпляр клиента MinIO
+     */
     MinioClient minioClient;
-    
+
+    /**
+     * Конструктор по-умолчанию.
+     */
     MinIOAdapter(){
         minioClient =    MinioClient.builder()
             .endpoint("http://localhost:9000")
@@ -21,6 +30,9 @@ class MinIOAdapter{
             .build();
     }
 
+    /**
+     * Инициализировать S3 бакеты для системы
+     */
     public void init(){
         try{
             minioClient.makeBucket(
@@ -44,17 +56,23 @@ class MinIOAdapter{
         }
 
     }
-    
+
     /**
-    *   Resolve path to project from projectTemplateName and projectName
-    */
+     * Сформировать путь до директории проекта компиляции FPGA
+     * @param projectTemplateName имя прототипа
+     * @param projectName имя проекта FPGA
+     * @return путь к директории с проектом FPGA
+     */
     String resolveProjectPath( String projectTemplateName, String projectName) {
         return "/processor_test/"+projectTemplateName+"/"+projectName;
     }
-    
+
     /**
-    *   resolve list of project names for prototype name, e.g.
-    */
+     * Сформировать список проектов ПЛИС FPGA по имени прототипа
+     * В директории прототипа (/processor_test/имя прототипа) расположены директории проектов FPGA. Список имен этих директорий надо вернуть.
+     * @param projectTemplateName имя прототипа
+     * @return список проектов ПЛИС FPGA входящих в проект прототипа
+     */
     String[] resolveProjectTemplate( String projectTemplateName){
         ArrayList<String> resPrototype = new ArrayList<>();
         String prefix = "processor_test/" + projectTemplateName+"/";
@@ -82,10 +100,11 @@ class MinIOAdapter{
 
         return res;
     }
- 
+
     /**
-    *   Put CompilationTaskTicket to "tickets" bucket
-    */
+     * Загрузка в S3 бакет tickets экземпляр класса задачи компиляции FPGA
+     * @param object - экземпляр который нужно сохранить
+     */
     void putCompilationTaskTicket(CompilationTaskTicket object){
         String uuid = object.getUUID();
 
@@ -108,10 +127,12 @@ class MinIOAdapter{
 
 
     }
-    
+
     /**
-    *   Get CompilationTaskTicket from "tickets" bucket
-    */
+     * Получить экземпляр класса задачи компиляции проекта FPGA
+     * @param UUID UUID задачи которую надо получить
+     * @return экземпляр задачи
+     */
     CompilationTaskTicket getCompilationTaskTicket( String UUID){
         try (InputStream stream = minioClient.getObject(
                 GetObjectArgs.builder()
@@ -128,6 +149,10 @@ class MinIOAdapter{
         return new CompilationTaskTicket();
     }
 
+    /**
+     * Загрузка в S3 бакет tasks экземпляр класса задачи компиляции прототипа
+     * @param obj - экземпляр который нужно сохранить
+     */
     void putExtendedTaskTicket(ExtendedTaskTicket obj){
         String uuid = obj.getUUID();
 
@@ -151,6 +176,11 @@ class MinIOAdapter{
 
     }
 
+    /**
+     * Получить экземпляр класса задачи компиляции прототипа из S3 бакета tasks
+     * @param UUID UUID задачи которую надо получить
+     * @return экземпляр задачи
+     */
     ExtendedTaskTicket getExtendedTaskTicket( String UUID ){
         try (InputStream stream = minioClient.getObject(
                 GetObjectArgs.builder()
@@ -167,6 +197,10 @@ class MinIOAdapter{
         return new ExtendedTaskTicket();
     }
 
+    /**
+     * Получить список задач компиляции прототипов полученных системой
+     * @return список UUID задач компиляции прототипов
+     */
     List<String> listExtendedTaskTickets(){
         LinkedList<String> res = new LinkedList<String>();
         Iterable<Result<Item>> results = minioClient.listObjects(

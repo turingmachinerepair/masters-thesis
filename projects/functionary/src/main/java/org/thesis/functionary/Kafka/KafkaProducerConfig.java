@@ -11,10 +11,21 @@ import org.springframework.kafka.core.ProducerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Класс-издатель для брокера Kafka
+ */
 @Configuration
 public class KafkaProducerConfig {
 
+    /**
+     * Адрес брокера Kafka
+     */
     String bootstrapAddress = "127.0.0.1:9094";
+
+    /**
+     * Сгенерировать экземпляр ProducerFactory для брокера Kafka.
+     * @return фабрику издателей Kafka сконфигурированный для передачи UUID
+     */
     @Bean
     public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
@@ -30,6 +41,10 @@ public class KafkaProducerConfig {
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
+    /**
+     * Сгенерировать экземпляр издателя UUID в тему TaskFabric
+     * @return экземпляр издателя UUID в тему TaskFabric
+     */
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {
 

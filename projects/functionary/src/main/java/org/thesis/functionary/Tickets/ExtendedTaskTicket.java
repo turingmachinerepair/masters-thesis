@@ -7,16 +7,29 @@ import org.springframework.validation.Errors;
 
 import java.util.HashSet;
 
-
+/**
+ * Класс расширенной задачи компиляции прототипа.
+ * Содержит в себе исходный экземпляр задачи компиляции и множество UUID задач для компиляции проектов ПЛИС
+ */
 @Data
 public class ExtendedTaskTicket extends  TaskTicket implements java.io.Serializable  {
 
+    /**
+     * Множество UUID задач для компиляции проектов ПЛИС, выполняющихся в рамках задачи компиляции прототипа
+     */
     private HashSet<String> taskUUIDs;
 
+    /**
+     * Конструктор по-умолчанию
+     */
     public ExtendedTaskTicket(){
         taskUUIDs = new HashSet<String>();
     }
 
+    /**
+     * Конструктор из экземпляра суперкласса
+     * @param tt - базовый экземпляр задачи для компиляции прототипа
+     */
     public ExtendedTaskTicket( TaskTicket tt){
         super.setFootnote( tt.getFootnote() );
         super.setTaskId( tt.getTaskId() );
@@ -25,10 +38,18 @@ public class ExtendedTaskTicket extends  TaskTicket implements java.io.Serializa
         taskUUIDs = new HashSet<String>();
     }
 
+    /**
+     * Добавить UUID задачу в множество ассоциированных задач компиляции
+     * @param UUID - UUID задачи компиляции FPGA, связанной с текущей задачей компиляции прототипа.
+     */
     public void associateTask(String UUID){
         taskUUIDs.add(UUID);
     }
 
+    /**
+     * Получить UUID задачи компиляции прототипа
+     * @return UUID задачи компиляции прототипа. Формируется из ID задачи, имени задачи и строки UUID ассоциированных задач
+     */
     public String getUUID(){
         String res = this.getTaskId() + "-" + this.getTaskName() + "-" + taskUUIDs.toString();
         return res;

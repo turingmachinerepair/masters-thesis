@@ -20,66 +20,82 @@ import org.thesis.functionary.Tickets.TaskTicketValidator;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-
 /**
- * Static data necessary:
- * 1) List of prototype templates
- * 2) Project compilation digest - resources necessary, time estimate calculation
- */
-
-/**
- * request ( TaskTicket instance )
- *  -> task tickets one per project ( CompilationTaskTicket instances )
- *  -> resolve project paths and names in minio ( Fill CompilationTaskTicket project paths )
- *  -> put tasks in designated minio bucket
- *  -> commit to kafka ( UUID string, no alterations to default  );
- *
- * request -> get task status from storage - return JSON
- *
- * kafka producer - produces messages for task queue
+ * Класс REST-контроллер сервиса управления системой
  */
 @Enabled
 @RestController
 public class Functionary {
+
+    /**
+     * Строка идентификатор микросервиса
+     */
     String serviceIdentificator;
+
+    /**
+     * Имя темы в брокере Kafka для публикации UUID задач для компиляции ПЛИС
+     */
     String topicName = "TaskFabric";
+
+    /**
+     * Экземпляр адаптера для MinIO
+     */
     MinIOAdapter minioAdapter = new MinIOAdapter();
+
+    /**
+     * Экземпляр издателя для брокера Kafka, темы TaskFabric
+     * Имеет аннотацию @Autowired, создается автоматически фреймворком Spring.
+     */
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
+    /**
+     * Конструктор по-умолчанию.
+     * Формирует случайный идентификатор сервиса и инициализирует адаптер MinIO.
+     */
     public Functionary() {
         serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
-
         minioAdapter.init();
     }
 
-
+    /**
+     * Отправить сообщение брокеру Kafka, тема TaskFabric
+     * @param msg сообщение которое надо передавать
+     */
     public void sendMessage(String msg) {
-
         kafkaTemplate.send(topicName, msg);
     }
 
     /**
-     * REST controller
+     * Счетчик для назначения номеров задач
      */
     private final AtomicLong counter = new AtomicLong();
 
+    /**
+     * Экземпляр валидатора входящей JSON строки для создания задачи
+     */
     @Autowired
     TaskTicketValidator taskValidator = new TaskTicketValidator();
 
+    /**
+     * Метод, реализующий REST endpoint для создания новой задачи
+     * Метод HTTP POST, в теле запроса JSON-строка с данными для задачи
+     * @param ticket экземпляр задачи компиляции прототипа сформированный из переданной с запросом JSON-строки
+     * @param result результат валидации HTTP-запроса
+     * @return экземпляр входящей задачи для валидации что задача принята
+     */
     @PostMapping(path = "/commit_task", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public TaskTicket commitTask(@RequestBody TaskTicket ticket, BindingResult result) {
 
         System.out.println("New task request");
         taskValidator.validate(ticket, result);
-        ticket.setTasksID(counter.getAndIncrement());
+        ticket.setTaskId(counter.getAndIncrement());
         System.out.println(ticket.toString());
 
         String[] compilationTaskNames = minioAdapter.resolveProjectTemplate(ticket.getTaskName());
         ExtendedTaskTicket extendedTT = new ExtendedTaskTicket(ticket);
 
-        for (int i = 0; i < compilationTaskNames.length; i++) {
-            String projectName = compilationTaskNames[i];
+        for (String projectName : compilationTaskNames) {
             String projectPath = minioAdapter.resolveProjectPath(ticket.getTaskName(), projectName);
             CompilationTaskTicket compilationTask = new CompilationTaskTicket(
                     serviceIdentificator,
@@ -110,6 +126,11 @@ public class Functionary {
         //return new TaskTicket(counter.incrementAndGet(), String.format(template, name));
     }
 
+    /**
+     * Метод, реализующий REST endpoint для вывода списка задач компиляции
+     * Метод HTTP GET
+     * @return экземпляр входящей задачи для валидации что задача принята
+     */
     @GetMapping(path = "/list_tasks", produces = MediaType.APPLICATION_JSON_VALUE)
     public Object[] listTasks() {
         List<String> res = minioAdapter.listExtendedTaskTickets();
@@ -117,6 +138,13 @@ public class Functionary {
 
     }
 
+    /**
+     * Метод, реализующий REST endpoint для вывода списка задач компиляции
+     * Метод HTTP POST
+     * @param taskUUID UUID задачи из тела запроса
+     * @param result результат валидации HTTP-запроса
+     * @return экземпляр расширенной задачи для компиляции прототипа {@link org.thesis.functionary.Tickets.ExtendedTaskTicket}
+     */
     @PostMapping(path = "/task_status", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ExtendedTaskTicketResponse listFullTaskStatus(@RequestBody String taskUUID, BindingResult result) {
         System.out.println("Get task status:"+taskUUID);
