@@ -327,7 +327,10 @@ public class Quadomizer {
                     task.getTicket().getProjectName(),
                     cpuStr,
                             flowID,
-                    task.getTicket().getUUID()
+                    task.getTicket().getUUID(),
+                            "1>/prototype_root/oplogs/"+task.getTicket().getUUID()+"-"+strStage+"_1.log",
+                            "2>/prototype_root/oplogs/"+task.getTicket().getUUID()+"-"+strStage+"_2.log"
+
                     ) );
 
             //networks
@@ -349,7 +352,7 @@ public class Quadomizer {
                     withTarget("/prototype_root");
             List<Mount> mounts = new LinkedList<Mount>(Collections.singletonList(mnt));
             Map<String,String> lbls = new HashMap<String,String>( );
-            lbls.put(  "taskID", task.getTicket().getUUID() );
+            lbls.put(  "taskID", task.getTicket().getUUID()+"-"+strStage );
             //container spec
             ContainerSpec ct = new ContainerSpec().
                     withImage("phdinintegrals/quartus-masters:19.1-wrapper2").
@@ -398,8 +401,9 @@ public class Quadomizer {
             System.out.println("Register callback. Master ID:"+this.getServiceIdentificator());
             DockerContainerCallback resultCallback = new DockerContainerCallback(this, task.getTicket().getUUID() );
             dockerClient.eventsCmd().
-                    withLabelFilter("taskID="+task.getTicket().getUUID()).
+                    withLabelFilter("taskID="+task.getTicket().getUUID()+"-"+strStage).
                             exec( resultCallback );
+
             System.out.println("Task deployed");
 
         } catch( Exception e){
