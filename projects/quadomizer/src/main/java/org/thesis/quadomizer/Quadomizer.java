@@ -219,6 +219,7 @@ public class Quadomizer {
     @KafkaListener(topics = "TaskFabric", groupId = "dispatchers")
    public void receiveTask(@Payload String UUID){
 
+        System.out.println("-------------------------------------------");
         System.out.println("Received task, UUID:"+UUID);
         CompilationTaskTicket emptyTicket = new CompilationTaskTicket();
         CompilationTaskTicket ticket = minioInstance.getCompilationTaskTicket(UUID);
@@ -288,6 +289,8 @@ public class Quadomizer {
             minioInstance.putCompilationTaskTicket(ticket);
             sendMessage(UUID);
         }
+        System.out.println("Task processing finished.");
+        System.out.println("-------------------------------------------");
    }
 
     /**
@@ -327,12 +330,6 @@ public class Quadomizer {
                     task.getTicket().getUUID()
                     ) );
 
-            /*String cmd = "/bin/bash /root/quartus_wrapper.sh \"/prototype_root/"+ task.getTicket().getProjectPath()+"\" "
-                            +task.getTicket().getProjectName() +" " +
-                    task.getTicket().getNextStageIndex() + " " +
-                    task.getDigest().getCPUs() + " " +
-                    task.getTicket().getUUID();*/
-
             //networks
             List<NetworkAttachmentConfig> nets = new ArrayList<>(
                     Collections.singletonList(new NetworkAttachmentConfig().withTarget("host"))
@@ -351,13 +348,15 @@ public class Quadomizer {
                     withSource("/tmp/s3mount0").
                     withTarget("/prototype_root");
             List<Mount> mounts = new LinkedList<Mount>(Collections.singletonList(mnt));
-
+            Map<String,String> lbls = new HashMap<String,String>( );
+            lbls.put(  "taskID", task.getTicket().getUUID() );
             //container spec
             ContainerSpec ct = new ContainerSpec().
                     withImage("phdinintegrals/quartus-masters:19.1-wrapper2").
                     withCommand( cmd ).
                     withTty(true).
-                    withMounts(mounts);
+                    withMounts(mounts).
+                    withLabels(lbls);
 
             //task spec
             TaskSpec tt = new TaskSpec().
@@ -399,8 +398,7 @@ public class Quadomizer {
             System.out.println("Register callback. Master ID:"+this.getServiceIdentificator());
             DockerContainerCallback resultCallback = new DockerContainerCallback(this, task.getTicket().getUUID() );
             dockerClient.eventsCmd().
-                    withContainerFilter("task.id="+tasks.get(0).getId()).
-                    withEventFilter("die").
+                    withLabelFilter("taskID="+task.getTicket().getUUID()).
                             exec( resultCallback );
             System.out.println("Task deployed");
 
@@ -417,7 +415,7 @@ public class Quadomizer {
      * Обновить состояние задачи и загрузить его в S3
      * @param UUID UUID задачи
      */
-   public void updateTaskStatus(String UUID){
+   public void updateTaskStatus(String UUID) {
        System.out.println("Task "+UUID+" finished");
        //String containerID = assignedContainers.get(UUID);
 
@@ -495,7 +493,16 @@ public class Quadomizer {
        System.out.println("Res manager snapshot:" + resourceManager.toString() );
 
        System.out.println("Killing service.");
-       dockerClient.removeServiceCmd(serviceID);
+       dockerClient.removeServiceCmd(serviceID).exec();
+       List<String> serviceIDList = new LinkedList<String>(Collections.singleton(serviceID));
+       while( !dockerClient.listServicesCmd().withIdFilter(serviceIDList).exec().isEmpty() ){
+           System.out.println("Service not killed yet. Waiting.");
+           try{
+               Thread.sleep(100L);
+           } catch( Exception e){
+               System.out.println(e.toString() );
+           }
+       }
 
        System.out.println("Remove container reference");
        assignedContainers.remove(UUID);
