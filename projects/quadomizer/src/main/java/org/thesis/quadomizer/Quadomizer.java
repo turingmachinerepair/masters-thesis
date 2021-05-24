@@ -17,9 +17,13 @@ import io.minio.PutObjectArgs;
 import jdk.jfr.Enabled;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.time.FastDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +34,7 @@ import sun.net.ResourceManager;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -217,9 +222,13 @@ public class Quadomizer {
      * @param UUID UUID задачи которую нужно выполнить
      */
     @KafkaListener(topics = "TaskFabric", groupId = "dispatchers")
-   public void receiveTask(@Payload String UUID){
+   public void receiveTask(@Payload String UUID,
+                           @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
+                           @Header(KafkaHeaders.OFFSET) int offsets,
+                           Acknowledgment acknowledgment){
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
-        System.out.println("-------------------------------------------");
+        System.out.println("-------------------"+timestamp.toString()+"------------------------");
         System.out.println("Received task, UUID:"+UUID);
         CompilationTaskTicket emptyTicket = new CompilationTaskTicket();
         CompilationTaskTicket ticket = minioInstance.getCompilationTaskTicket(UUID);
@@ -237,7 +246,6 @@ public class Quadomizer {
                 while( resourceManager.isOpInProgress() ){
                     resourceManager.wait();
                 }
-
                 hostname = resourceManager.deployTask(taskContext);
 
                 resourceManager.notifyAll();
@@ -268,7 +276,6 @@ public class Quadomizer {
                     }
 
                     resourceManager.freeTask(taskContext);
-
                     resourceManager.notifyAll();
 
                 }
@@ -277,17 +284,23 @@ public class Quadomizer {
             }
 
 
+            System.out.println("NACK teh message.");
+            acknowledgment.nack(10);
 
         } else if( deploymentPossible && deploymentSuccessful ) {
+            System.out.println("Deployment succesful. Update ticket.");
             ticket.setCurrentState(STATES.PROCESSING);
             ticket.setHostname(hostname);
             ticket.setCurrentStage( digest.getStage() );
             minioInstance.putCompilationTaskTicket(ticket);
+            System.out.println("Acknowledge to broker.");
+            acknowledgment.acknowledge();
         } else {
-            System.out.println("Deployment impossible. Return ticket to fabric");
-            ticket.setCurrentState(STATES.QUEUED);
-            minioInstance.putCompilationTaskTicket(ticket);
-            sendMessage(UUID);
+            System.out.println("Deployment impossible. NACK teh message.");
+            //ticket.setCurrentState(STATES.QUEUED);
+            //minioInstance.putCompilationTaskTicket(ticket);
+            //sendMessage(UUID);
+            acknowledgment.nack(10);
         }
         System.out.println("Task processing finished.");
         System.out.println("-------------------------------------------");
@@ -327,10 +340,7 @@ public class Quadomizer {
                     task.getTicket().getProjectName(),
                     cpuStr,
                             flowID,
-                    task.getTicket().getUUID(),
-                            "1>/prototype_root/oplogs/"+task.getTicket().getUUID()+"-"+strStage+"_1.log",
-                            "2>/prototype_root/oplogs/"+task.getTicket().getUUID()+"-"+strStage+"_2.log"
-
+                    task.getTicket().getUUID()
                     ) );
 
             //networks

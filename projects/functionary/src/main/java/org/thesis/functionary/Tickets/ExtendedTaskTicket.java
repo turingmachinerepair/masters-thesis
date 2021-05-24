@@ -48,11 +48,10 @@ public class ExtendedTaskTicket extends  TaskTicket implements java.io.Serializa
 
     /**
      * Получить UUID задачи компиляции прототипа
-     * @return UUID задачи компиляции прототипа. Формируется из ID задачи, имени задачи и строки UUID ассоциированных задач
+     * @return UUID задачи компиляции прототипа. Формируется из ID задачи, имени задачи и хеша от строки UUID ассоциированных задач
      */
     public String getUUID(){
-        String res = this.getTaskId() + "-" + this.getTaskName() + "-" + taskUUIDs.toString();
-        return res;
+        return this.getTaskId() + "-" + this.getTaskName() + "-" + String.valueOf( taskUUIDs.toString().hashCode() );
     }
 
 }
