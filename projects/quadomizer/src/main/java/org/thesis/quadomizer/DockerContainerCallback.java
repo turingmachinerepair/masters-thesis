@@ -10,6 +10,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
+ * @deprecated
  * Класс обратного вызова при окончании работы над задачей Swarm
  * Наследник {@link com.github.dockerjava.core.command.EventsResultCallback}
  */

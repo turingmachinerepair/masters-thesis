@@ -2,6 +2,7 @@ package org.thesis.functionary;
 
 import io.minio.*;
 import io.minio.messages.Item;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.SerializationUtils;
 import org.springframework.util.StreamUtils;
 import org.thesis.common.Tickets.CompilationTaskTicket;
@@ -18,6 +19,8 @@ class MinIOAdapter{
     /**
      * Экземпляр клиента MinIO
      */
+     @Value("${minio.addr}")
+    String addr;
     MinioClient minioClient;
 
     /**
@@ -25,7 +28,7 @@ class MinIOAdapter{
      */
     MinIOAdapter(){
         minioClient =    MinioClient.builder()
-            .endpoint("http://localhost:9000")
+            .endpoint("http://"+addr)
             .credentials("minioadmin", "minioadmin")
             .build();
     }

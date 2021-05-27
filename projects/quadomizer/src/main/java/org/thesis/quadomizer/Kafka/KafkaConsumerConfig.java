@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -20,7 +21,9 @@ import java.util.Map;
 public class KafkaConsumerConfig {
 
     String groupId = "dispatchers";
-    String bootstrapAddress = "127.0.0.1:9094";
+
+    @Value("${kafka.broker.addr}")
+    String bootstrapAddress;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {

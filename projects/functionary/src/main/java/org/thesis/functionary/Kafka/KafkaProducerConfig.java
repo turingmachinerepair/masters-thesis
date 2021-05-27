@@ -2,6 +2,7 @@ package org.thesis.functionary.Kafka;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -20,7 +21,9 @@ public class KafkaProducerConfig {
     /**
      * Адрес брокера Kafka
      */
-    String bootstrapAddress = "127.0.0.1:9094";
+
+    @Value("${kafka.broker.addr}")
+    String bootstrapAddress;
 
     /**
      * Сгенерировать экземпляр ProducerFactory для брокера Kafka.

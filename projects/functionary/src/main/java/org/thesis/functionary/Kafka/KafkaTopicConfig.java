@@ -20,7 +20,7 @@ public class KafkaTopicConfig {
     /**
      * Адрес брокера Kafka
      */
-    @Value(value = "127.0.0.1:9094")
+    @Value("${kafka.broker.addr}")
     private String bootstrapAddress;
 
     /**

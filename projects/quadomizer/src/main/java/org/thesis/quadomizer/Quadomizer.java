@@ -19,6 +19,8 @@ import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
@@ -27,6 +29,9 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.thesis.common.Tickets.*;
 import sun.misc.IOUtils;
 import org.thesis.quadomizer.Node.NodeManager;
@@ -42,6 +47,7 @@ import java.util.*;
  */
 @Enabled
 @Service
+@RestController
 public class Quadomizer {
 
     /**
@@ -83,6 +89,12 @@ public class Quadomizer {
      * Справочник контекстов активных задач
      */
     Hashtable<String,CompilationTaskContext> taskContexts;
+
+    @Value( "${server.address}" )
+    private String IP;
+
+    @Value( "${server.port}" )
+    private String port;
 
     /**
      * Экземпляр издателя Kafka
@@ -317,30 +329,30 @@ public class Quadomizer {
         //create container
         try{
             STAGES stage = task.getTicket().getNextStage();
+            String strStage = "";
+            String cpuStr =  String.valueOf( task.getDigest().getCPUs() );
             int nextStage = 0;
             if( stage == STAGES.Synthesis)
-                nextStage = 1;
+                strStage = "/opt/quartus/quartus/bin/quartus_map -p --parallel=" + cpuStr +" "+ task.getTicket().getProjectName() ;
             else if (stage == STAGES.Fit )
-                nextStage = 2;
+                strStage = "/opt/quartus/quartus/bin/quartus_fit -p --parallel=" + cpuStr +" "+ task.getTicket().getProjectName() ;
             else if (stage == STAGES.TimingAnalysis )
-                nextStage = 3;
+                strStage = "/opt/quartus/quartus/bin/quartus_sta -p --parallel=" + cpuStr +" "+ task.getTicket().getProjectName() ;
             else if (stage == STAGES.Assembler)
-                nextStage = 4;
-            String strStage = String.valueOf(nextStage);
+                strStage = "/opt/quartus/quartus/bin/quartus_asm "+ task.getTicket().getProjectName() ;
 
+            System.out.println("Command:" + strStage);
             System.out.println("Create service");
             //command
-            String cpuStr =  String.valueOf( task.getDigest().getCPUs() );
-            String flowID = strStage;
             List<String> cmd = new ArrayList<>(
                     Arrays.asList(
                     "/bin/bash",
                     "/root/quartus_wrapper.sh",
                     "/prototype_root"+ task.getTicket().getProjectPath(),
                     task.getTicket().getProjectName(),
-                    cpuStr,
-                            flowID,
-                    task.getTicket().getUUID()
+                    strStage,
+                    task.getTicket().getUUID(),
+                    "http://"+IP+":"+port
                     ) );
 
             //networks
@@ -406,14 +418,6 @@ public class Quadomizer {
             System.out.println("Container reference snapshot:" + assignedContainers.toString());
             System.out.println("Services reference snapshot:" + assignedContainers.toString());
 
-
-            //Implement event watcher for new task and register callback
-            System.out.println("Register callback. Master ID:"+this.getServiceIdentificator());
-            DockerContainerCallback resultCallback = new DockerContainerCallback(this, task.getTicket().getUUID() );
-            dockerClient.eventsCmd().
-                    withLabelFilter("taskID="+task.getTicket().getUUID()+"-"+strStage).
-                            exec( resultCallback );
-
             System.out.println("Task deployed");
 
         } catch( Exception e){
@@ -429,7 +433,8 @@ public class Quadomizer {
      * Обновить состояние задачи и загрузить его в S3
      * @param UUID UUID задачи
      */
-   public void updateTaskStatus(String UUID) {
+    @PostMapping(path = "/task_finished", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void updateTaskStatus(@RequestBody String UUID) {
        System.out.println("Task "+UUID+" finished");
        //String containerID = assignedContainers.get(UUID);
 

@@ -3,6 +3,7 @@ package org.thesis.quadomizer;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.SerializationUtils;
 import org.springframework.util.StreamUtils;
 import org.thesis.common.Tickets.CompilationTaskTicket;
@@ -15,11 +16,15 @@ import java.util.Arrays;
 import java.util.List;
 
 class MinIOAdapter{
+
+    @Value("${minio.addr}")
+    private String addr;
+
     MinioClient minioClient;
     
     MinIOAdapter(){
         minioClient =    MinioClient.builder()
-            .endpoint("http://localhost:9000")
+            .endpoint("http://"+addr)
             .credentials("minioadmin", "minioadmin")
             .build();
     }
