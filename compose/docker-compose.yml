@@ -4,13 +4,17 @@ services:
   zookeeper:
     image: wurstmeister/zookeeper
     hostname: zookeeper
+    networks:
+      default:
+        aliases:
+         - zookeeper
     ports:
       - "2181:2181"
       
 #kafka worker
   kafka:
     image: wurstmeister/kafka:latest
-    #hostname: kafka
+    hostname: kafka
     ports:
       - target: 9094
         published: 9094
@@ -20,6 +24,10 @@ services:
       - "9094"
     depends_on:
      - zookeeper
+    networks:
+      default:
+        aliases:
+         - kafka
     deploy:
       labels:
         feature.description: "Kafka"
@@ -32,7 +40,7 @@ services:
       HOSTNAME_COMMAND: "hostname | awk -F'-' '{print $$2}'"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://localhost:9094
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://kafka:9094
       KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       #KAFKA_ADVERTISED_HOST_NAME: 10.0.0.50
@@ -47,6 +55,11 @@ services:
        published: 9000
        protocol: tcp
        mode: host
+    networks:
+      default:
+        aliases:
+         - minio
+         - storage
     expose:
       - "9000"
     deploy:
@@ -58,9 +71,67 @@ services:
       restart_policy:
         condition: any
     command: server /data
-
+    
+  functionary:
+    image: thesis-functionary:latest
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
+    expose:
+      - "8080"
+    networks:
+      default:
+        aliases:
+         - functionary
+    environment:
+      KAFKA_BROKER_ADDR: http://kafka:9094
+      MINIO_ADDR: http://minio:9000
+    deploy:
+      labels:
+        feature.description: "Application server"
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: any
+    depends_on:
+    - kafka
+    - storage
+    
+  quadomizer:
+    hostname: quadomizer
+    image: thesis-quadomizer:latest
+    ports:
+     - target: 8081
+       published: 8081
+       protocol: tcp
+       mode: host
+    expose:
+     - "8081"
+    networks:
+      default:
+        aliases:
+         - quadomizer
+    environment:
+      KAFKA_BROKER_ADDR: http://kafka:9094
+      MINIO_ADDR: http://minio:9000
+      SERVER_PORT: 8081
+    deploy:
+      labels:
+        feature.description: "Dispatcher server"
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: any
+    volumes:
+     - type: bind
+       source: /var/run/docker.sock
+       target: /var/run/docker.sock
+    depends_on:
+    - kafka
+    - storage
       
-volumes:
-  quartus-volume:
-  storage-volume:
     
