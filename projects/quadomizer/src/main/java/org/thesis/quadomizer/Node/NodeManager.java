@@ -36,10 +36,7 @@ public class NodeManager{
      * Конструктор по-умолчанию
      */
     public NodeManager(){
-        NodeDescriptor node1 = new NodeDescriptor("native-d8", 24,64);
-        NodeDescriptor node2 = new NodeDescriptor("var2-vm5",6,20);
-        NodeDescriptor node3 = new NodeDescriptor("var2-vm6",6,20);
-        nodes = Arrays.asList(node1,node2,node3);
+        nodes = new ArrayList<>();
         tasks = new HashMap<String,Integer>();
         opInProgress = false;
     }
@@ -69,6 +66,7 @@ public class NodeManager{
                 int CPUs = Math.toIntExact( nanoCPU / nanoCpuDivisor );
                 System.out.print("+");
                 int RAM = Math.toIntExact(ramBytes / RAMDivisor);
+                RAM += 1;
                 System.out.print("+");
                 NodeDescriptor localNode = new NodeDescriptor( hostname, CPUs, RAM );
                 System.out.println("New node:" +  localNode.toString() );
@@ -101,7 +99,6 @@ public class NodeManager{
      * @param task экземпляр полного контекста задачи компиляции ПЛИС
      * @return имя узла на котором запущена задача. Пустая строка если выполнение невозможно.
      */
-    //TODO: фильтрация по доле свободной памяти
     public String deployTask( CompilationTaskContext task){
         opInProgress = true;
         System.out.println("Pre-deploy tasks: "+ tasks.toString() );
@@ -110,22 +107,36 @@ public class NodeManager{
         boolean deployed = false;
         int nodeIndex=0;
         ListIterator<NodeDescriptor> it = nodes.listIterator();
+        double minRamRatio = 1;
 
+        System.out.println("\tRunning deployment analysis..." );
         while( it.hasNext() && !deployed){
             NodeDescriptor node = it.next();
 
             if( node.evaluateDeploymentPossibility(task) ){
-                node.deployTask(task);
-                tasks.put(task.getTicket().getUUID(), nodeIndex );
-
-                nodeName = node.getName();
-                deployed = true;
-            }
-
+                float reservedRamRatio = ((float)node.getReservedRAM())/((float)node.getRAM());
+                System.out.println("\tRes ratio:" + reservedRamRatio +" Current minimal ratio:"+minRamRatio );
+                if( reservedRamRatio < minRamRatio ){
+                    deployed = true;
+                }
+            } else
+                nodeIndex++;
         }
 
+        if( deployed ){
+            NodeDescriptor node = nodes.get(nodeIndex);
+
+            node.deployTask(task);
+            tasks.put(task.getTicket().getUUID(), nodeIndex );
+            nodeName = node.getName();
+            System.out.println("Can be deployed on "+nodeName );
+        } else {
+
+            System.out.println("No resources to deploy tasks." );
+        }
         System.out.println("Post-deploy tasks: "+ tasks.toString() );
         System.out.println("Post-deploy nodes: "+ nodes.toString() );
+
         opInProgress = false;
         return nodeName;
     }
