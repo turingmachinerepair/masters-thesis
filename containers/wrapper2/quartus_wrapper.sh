@@ -10,9 +10,9 @@ echo "STEP 0 - define locals"
 echo "ARGS:"
 echo "PROJECT: ${PROJECT}"
 echo "PROJECTNAME: ${PROJECTNAME}"
-echo "CPULIMIT: ${CPULIMIT}"
 echo "FLOW: ${FLOW}"
 echo "UUID: ${UUID}"
+echo "RESPONSE_ADDR ${RESPONSE_ADDR}"
 QUARTUS_DIR=/opt/quartus/quartus
 LOGS=/prototype_root/logs
 SRC_DIR=/prototype_root
@@ -46,7 +46,7 @@ pwd
 ls -la
 head ${PROJECTNAME}.qsf
 
-${FLOW} > ${LOGS}/${UUID}-${FLOW}.log
+${FLOW} >> ${LOGS}/${UUID}-oplog.log
 RES=$?
 
 echo "STEP 3 - copy results"
@@ -62,6 +62,6 @@ fi
 curl --header "Content-Type: application/json" \
   --request POST \
   --data ${UUID} \
-  ${RESPONSE_ADDR}
+  ${RESPONSE_ADDR}/task_finished
 
 exit $RES
