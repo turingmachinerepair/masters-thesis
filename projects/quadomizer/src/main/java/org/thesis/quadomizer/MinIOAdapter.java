@@ -4,17 +4,19 @@ import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.util.SerializationUtils;
 import org.springframework.util.StreamUtils;
 import org.thesis.common.Tickets.CompilationTaskTicket;
 import sun.misc.IOUtils;
 
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+@Component
 class MinIOAdapter{
 
     @Value("${minio.addr}")
@@ -23,10 +25,16 @@ class MinIOAdapter{
     MinioClient minioClient;
     
     MinIOAdapter(){
+
+    }
+
+    @PostConstruct
+    void init(){
+        System.out.println("Minio addr:"+addr+" effective addr:http://"+addr);
         minioClient =    MinioClient.builder()
-            .endpoint("http://"+addr)
-            .credentials("minioadmin", "minioadmin")
-            .build();
+                .endpoint("http://"+addr)
+                .credentials("minioadmin", "minioadmin")
+                .build();
     }
     
     /**

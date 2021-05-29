@@ -37,6 +37,7 @@ import sun.misc.IOUtils;
 import org.thesis.quadomizer.Node.NodeManager;
 import sun.net.ResourceManager;
 
+import javax.annotation.PostConstruct;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
@@ -73,7 +74,7 @@ public class Quadomizer {
     /**
      * Экземпляр диспетчера ресурсов кластера
      */
-    final NodeManager resourceManager;
+    NodeManager resourceManager;
 
     /**
      * ID контейнеров назначенных на задачу.
@@ -120,18 +121,29 @@ public class Quadomizer {
 
        serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
 
-       minioInstance = new MinIOAdapter();
 
+   }
+
+   @PostConstruct
+   void init(){
+        System.out.println("Service initialization. Unique name:"+serviceIdentificator);
+       System.out.println("STEP 0:Init MinIO client");
+        minioInstance = new MinIOAdapter();
+
+       System.out.println("STEP 1:Init Docker client");
+       System.out.println("STEP 1.1:Init Docker client config");
        DockerClientConfig custom = DefaultDockerClientConfig.createDefaultConfigBuilder()
                .withDockerHost("unix:///var/run/docker.sock")
                .build();
 
+       System.out.println("STEP 1.2:Init Docker client http client");
        DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
                .dockerHost(custom.getDockerHost())
                .sslConfig(custom.getSSLConfig())
                .maxConnections(100)
                .build();
 
+       System.out.println("STEP 1.3:Init Docker client instance");
        dockerClient = DockerClientImpl.getInstance(custom, httpClient);
 
 
@@ -139,10 +151,12 @@ public class Quadomizer {
        assignedServices = new Hashtable<String,String>();
        taskContexts = new Hashtable<String,CompilationTaskContext>();
 
+       System.out.println("STEP 2:Init swarm node description.");
        List<SwarmNode> nodes = dockerClient.listSwarmNodesCmd().exec();
        resourceManager = new NodeManager(nodes);
 
        System.out.println( "Registered nodes:" + resourceManager.toString() );
+       System.out.println("Service initialization finished.");
 
    }
 
