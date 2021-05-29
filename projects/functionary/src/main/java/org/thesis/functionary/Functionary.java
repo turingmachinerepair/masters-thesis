@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jdk.jfr.Enabled;
+import org.apache.kafka.common.metrics.stats.Min;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.validation.BindingResult;
@@ -19,6 +21,8 @@ import org.thesis.functionary.Tickets.*;
 import org.thesis.functionary.Tickets.TaskTicketValidator;
 
 import org.apache.commons.lang3.RandomStringUtils;
+
+import javax.annotation.PostConstruct;
 
 /**
  * Класс REST-контроллер сервиса управления системой
@@ -37,10 +41,13 @@ public class Functionary {
      */
     String topicName = "TaskFabric";
 
+    @Value("${minio.addr}")
+    String MinIOAddr;
+
     /**
      * Экземпляр адаптера для MinIO
      */
-    MinIOAdapter minioAdapter = new MinIOAdapter();
+    MinIOAdapter minioAdapter ;
 
     /**
      * Экземпляр издателя для брокера Kafka, темы TaskFabric
@@ -55,6 +62,14 @@ public class Functionary {
      */
     public Functionary() {
         serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
+    }
+
+    @PostConstruct
+    void init(){
+        System.out.println("Init minio");
+        minioAdapter = new MinIOAdapter(MinIOAddr);
+        minioAdapter.init();
+        System.out.println("Init finished");
     }
 
     /**

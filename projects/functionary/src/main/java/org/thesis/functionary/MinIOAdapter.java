@@ -17,33 +17,35 @@ import java.util.*;
 /**
  * Адаптер MinIO, реализующий прикладную логику работы с S3
  */
-@Component
 class MinIOAdapter{
     /**
      * Экземпляр клиента MinIO
      */
-     @Value("${minio.addr}")
     String addr;
     MinioClient minioClient;
 
     /**
      * Конструктор по-умолчанию.
      */
-    MinIOAdapter(){
+    MinIOAdapter( String addr){
+        this.addr = addr;
     }
 
     /**
      * Инициализировать S3 бакеты для системы
      */
-    @PostConstruct
     public void init(){
         System.out.println("Minio server addr:"+addr +" effective addr:"+"http://"+addr);
-        try{
-            minioClient =    MinioClient.builder()
-                    .endpoint("http://"+addr)
+        try {
+            minioClient = MinioClient.builder()
+                    .endpoint("http://" + addr)
                     .credentials("minioadmin", "minioadmin")
                     .build();
+        } catch(Exception e){
+                System.out.println(e.toString());
+        }
 
+        try{
             minioClient.makeBucket(
                     MakeBucketArgs.builder()
                             .bucket("tickets")
@@ -83,6 +85,7 @@ class MinIOAdapter{
         String prefix = "processor_test/" + projectTemplateName+"/";
         System.out.println("Resolve project:" + projectTemplateName +" Prefix:"+prefix);
         ListObjectsArgs args = ListObjectsArgs.builder().bucket("src").prefix(prefix).build();
+        System.out.println("Projects detected:");
         Iterable<Result<Item>> results = minioClient.listObjects(args);
         System.out.println(results.toString() );
         for( Result<Item> obj : results){

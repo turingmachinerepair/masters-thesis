@@ -16,19 +16,17 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-@Component
+
 class MinIOAdapter{
 
-    @Value("${minio.addr}")
-    private String addr;
+    private final String addr;
 
     MinioClient minioClient;
     
-    MinIOAdapter(){
-
+    MinIOAdapter(String addr){
+        this.addr = addr;
     }
 
-    @PostConstruct
     void init(){
         System.out.println("Minio addr:"+addr+" effective addr:http://"+addr);
         minioClient =    MinioClient.builder()

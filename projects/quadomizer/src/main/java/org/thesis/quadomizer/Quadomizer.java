@@ -61,6 +61,9 @@ public class Quadomizer {
      */
     MinIOAdapter minioInstance;
 
+    @Value("${minio.addr}")
+    String MinIOAddr;
+
     /**
      * Имя темы Kafka откуда читаются UUID задач и куда возвращаются UUID задач
      */
@@ -124,11 +127,12 @@ public class Quadomizer {
 
    }
 
-   @PostConstruct
+    @PostConstruct
    void init(){
         System.out.println("Service initialization. Unique name:"+serviceIdentificator);
        System.out.println("STEP 0:Init MinIO client");
-        minioInstance = new MinIOAdapter();
+        minioInstance = new MinIOAdapter(MinIOAddr);
+        minioInstance.init();
 
        System.out.println("STEP 1:Init Docker client");
        System.out.println("STEP 1.1:Init Docker client config");
@@ -366,13 +370,13 @@ public class Quadomizer {
                     task.getTicket().getProjectName(),
                     strStage,
                     task.getTicket().getUUID(),
-                    "http://"+IP+":"+port
+                    "http://localhost:"+port
                     ) );
 
             //networks
-            List<NetworkAttachmentConfig> nets = new ArrayList<>(
-                    Collections.singletonList(new NetworkAttachmentConfig().withTarget("host"))
-            );
+            List<NetworkAttachmentConfig> nets = new ArrayList<>();
+            nets.add( new NetworkAttachmentConfig().withTarget("host") );
+            nets.add( new NetworkAttachmentConfig().withTarget("testnet_default") );
 
             String serviceName = "service-"+task.getTicket().getUUID();
 
