@@ -79,6 +79,7 @@ services:
         published: 8080
         protocol: tcp
         mode: host
+#     - "8080:8080"
     expose:
       - "8080"
     networks:
@@ -87,7 +88,7 @@ services:
          - functionary
     environment:
       KAFKA_BROKER_ADDR: http://kafka:9094
-      MINIO_ADDR: http://minio:9000
+      MINIO_ADDR: storage:9000
     deploy:
       labels:
         feature.description: "Application server"
@@ -104,10 +105,11 @@ services:
     hostname: quadomizer
     image: thesis-quadomizer:latest
     ports:
-     - target: 8081
-       published: 8081
-       protocol: tcp
-       mode: host
+#     - target: 8081
+#       published: 8081
+ #      protocol: tcp
+#       mode: host
+    - "8081:8081"
     expose:
      - "8081"
     networks:
@@ -116,7 +118,7 @@ services:
          - quadomizer
     environment:
       KAFKA_BROKER_ADDR: http://kafka:9094
-      MINIO_ADDR: http://minio:9000
+      MINIO_ADDR: storage:9000
       SERVER_PORT: 8081
     deploy:
       labels:
