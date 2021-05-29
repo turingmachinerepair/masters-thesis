@@ -31,6 +31,7 @@ public class KafkaProducerConfig {
      */
     @Bean
     public ProducerFactory<String, String> producerFactory() {
+        System.out.println("Kafka addr:"+bootstrapAddress);
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(
           ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,

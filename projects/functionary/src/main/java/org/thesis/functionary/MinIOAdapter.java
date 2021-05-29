@@ -3,11 +3,13 @@ package org.thesis.functionary;
 import io.minio.*;
 import io.minio.messages.Item;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.util.SerializationUtils;
 import org.springframework.util.StreamUtils;
 import org.thesis.common.Tickets.CompilationTaskTicket;
 import org.thesis.functionary.Tickets.ExtendedTaskTicket;
 
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.*;
@@ -15,6 +17,7 @@ import java.util.*;
 /**
  * Адаптер MinIO, реализующий прикладную логику работы с S3
  */
+@Component
 class MinIOAdapter{
     /**
      * Экземпляр клиента MinIO
@@ -27,17 +30,20 @@ class MinIOAdapter{
      * Конструктор по-умолчанию.
      */
     MinIOAdapter(){
-        minioClient =    MinioClient.builder()
-            .endpoint("http://"+addr)
-            .credentials("minioadmin", "minioadmin")
-            .build();
     }
 
     /**
      * Инициализировать S3 бакеты для системы
      */
+    @PostConstruct
     public void init(){
+        System.out.println("Minio server addr:"+addr +" effective addr:"+"http://"+addr);
         try{
+            minioClient =    MinioClient.builder()
+                    .endpoint("http://"+addr)
+                    .credentials("minioadmin", "minioadmin")
+                    .build();
+
             minioClient.makeBucket(
                     MakeBucketArgs.builder()
                             .bucket("tickets")
@@ -49,10 +55,6 @@ class MinIOAdapter{
             minioClient.makeBucket(
                     MakeBucketArgs.builder()
                             .bucket("src")
-                            .build());
-            minioClient.makeBucket(
-                    MakeBucketArgs.builder()
-                            .bucket("projects")
                             .build());
         } catch(Exception e){
             System.out.println(e.toString());

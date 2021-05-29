@@ -55,7 +55,6 @@ public class Functionary {
      */
     public Functionary() {
         serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
-        minioAdapter.init();
     }
 
     /**
