@@ -124,7 +124,6 @@ public class Quadomizer {
 
        serviceIdentificator = RandomStringUtils.randomAlphabetic(10);
 
-
    }
 
     @PostConstruct
@@ -349,15 +348,23 @@ public class Quadomizer {
             STAGES stage = task.getTicket().getNextStage();
             String strStage = "";
             String cpuStr =  String.valueOf( task.getDigest().getCPUs() );
+            String serviceName = "service-"+task.getTicket().getUUID();
             int nextStage = 0;
-            if( stage == STAGES.Synthesis)
-                strStage = "/opt/quartus/quartus/bin/quartus_map -p --parallel=" + cpuStr +" "+ task.getTicket().getProjectName() ;
-            else if (stage == STAGES.Fit )
+            if( stage == STAGES.Synthesis) {
+                serviceName += "-syn";
+                strStage = "/opt/quartus/quartus/bin/quartus_map -p --parallel=" + cpuStr + " " + task.getTicket().getProjectName();
+            }
+            else if (stage == STAGES.Fit ){
+                serviceName += "-fit";
                 strStage = "/opt/quartus/quartus/bin/quartus_fit -p --parallel=" + cpuStr +" "+ task.getTicket().getProjectName() ;
-            else if (stage == STAGES.TimingAnalysis )
-                strStage = "/opt/quartus/quartus/bin/quartus_sta -p --parallel=" + cpuStr +" "+ task.getTicket().getProjectName() ;
-            else if (stage == STAGES.Assembler)
-                strStage = "/opt/quartus/quartus/bin/quartus_asm "+ task.getTicket().getProjectName() ;
+            }
+            else if (stage == STAGES.TimingAnalysis ) {
+                serviceName += "-sta";
+                strStage = "/opt/quartus/quartus/bin/quartus_sta -p --parallel=" + cpuStr + " " + task.getTicket().getProjectName();
+            } else if (stage == STAGES.Assembler) {
+                serviceName += "-assembler";
+                strStage = "/opt/quartus/quartus/bin/quartus_asm " + task.getTicket().getProjectName();
+            }
 
             System.out.println("Command:" + strStage);
             System.out.println("Create service");
@@ -376,9 +383,8 @@ public class Quadomizer {
             //networks
             List<NetworkAttachmentConfig> nets = new ArrayList<>();
             nets.add( new NetworkAttachmentConfig().withTarget("host") );
-            nets.add( new NetworkAttachmentConfig().withTarget("testnet_default") );
+//            nets.add( new NetworkAttachmentConfig().withTarget("testnet_default") );
 
-            String serviceName = "service-"+task.getTicket().getUUID();
 
             //placement
             ServicePlacement sp = new ServicePlacement().withConstraints(Collections.singletonList("node.hostname==" + hostname));
