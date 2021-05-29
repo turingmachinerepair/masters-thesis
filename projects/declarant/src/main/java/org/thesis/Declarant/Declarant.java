@@ -44,12 +44,14 @@ class Declarant implements Callable<Integer> {
                 .url(URL)
                 .get()
                 .build();
+
         try (Response response = client.newCall(request).execute()) {
             //get
             String data = response.body().string();
             //deser
             Gson gson = new Gson();
             String[] tt = gson.fromJson(data, String[].class);
+		System.out.println(tt.toString());
             //format
             AsciiTable at = new AsciiTable();
 
@@ -132,7 +134,7 @@ class Declarant implements Callable<Integer> {
             res = inspect(taskUUID);
         }
 
-        System.out.printf("Результат: "+res);
+        System.out.println("Результат:\n"+res);
         return 0;
     }
 
