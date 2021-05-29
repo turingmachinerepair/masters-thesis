@@ -1,11 +1,21 @@
 package org.thesis.Declarant;
 
+import com.google.gson.Gson;
+import de.vandermeer.asciitable.AsciiTable;
 import jdk.nashorn.internal.runtime.JSONFunctions;
 import okhttp3.*;
+import org.thesis.common.Tickets.CompilationTaskTicket;
+import org.thesis.common.Tickets.TaskTicket;
 import picocli.CommandLine;
 
 import java.io.IOException;
+import java.sql.Array;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.concurrent.Callable;
+
+import org.thesis.common.Tickets.ExtendedTaskTicketResponse;
 
 
 @CommandLine.Command(name = "declarant", mixinStandardHelpOptions = true, version = "0.1",
@@ -35,7 +45,24 @@ class Declarant implements Callable<Integer> {
                 .get()
                 .build();
         try (Response response = client.newCall(request).execute()) {
-            return response.body().string();
+            //get
+            String data = response.body().string();
+            //deser
+            Gson gson = new Gson();
+            String[] tt = gson.fromJson(data, String[].class);
+            //format
+            AsciiTable at = new AsciiTable();
+
+            at.addRule();
+            for(String UUID:tt){
+                at.addRule();
+                at.addRow(
+                        UUID
+                );
+            }
+            at.addRule();
+
+            return at.render();
         }
     }
 
@@ -48,7 +75,36 @@ class Declarant implements Callable<Integer> {
                 .post(body)
                 .build();
         try (Response response = client.newCall(request).execute()) {
-            return response.body().string();
+            String data = response.body().string();
+            Gson gson = new Gson();
+            ExtendedTaskTicketResponse tt = gson.fromJson(data, ExtendedTaskTicketResponse.class);
+            //format
+            AsciiTable at = new AsciiTable();
+            HashSet<CompilationTaskTicket> tasks = tt.getSubtasks();
+            at.addRule();
+            at.addRow(
+                    "UUID",
+                    "Состояние",
+                    "Имя проекта",
+                    "Путь",
+                    "Выч узел",
+                    "Текущий этап",
+                    "Следующий этап"
+            );
+            for(CompilationTaskTicket task:tasks){
+                at.addRule();
+                at.addRow(
+                        task.getUUID(),
+                        task.getCurrentState(),
+                        task.getProjectName(),
+                        task.getProjectName(),
+                        task.getHostname(),
+                        task.getCurrentStage(),
+                        task.getNextStage()
+                );
+            }
+            at.addRule();
+            return at.render();
         }
     }
 

@@ -1,4 +1,4 @@
-package org.thesis.functionary.Tickets;
+package org.thesis.common.Tickets;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Data;
 import org.springframework.stereotype.Component;

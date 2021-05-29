@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.SerializationUtils;
 import org.springframework.util.StreamUtils;
 import org.thesis.common.Tickets.CompilationTaskTicket;
-import org.thesis.functionary.Tickets.ExtendedTaskTicket;
+import org.thesis.common.Tickets.ExtendedTaskTicket;
 
 import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;

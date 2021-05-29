@@ -5,6 +5,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import org.thesis.common.Tickets.TaskTicket;
+
 
 @Component
 public class TaskTicketValidator implements Validator {

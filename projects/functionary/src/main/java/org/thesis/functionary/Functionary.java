@@ -19,8 +19,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.thesis.common.Tickets.CompilationTaskTicket;
 import org.thesis.functionary.Tickets.*;
 import org.thesis.functionary.Tickets.TaskTicketValidator;
+import org.thesis.common.Tickets.ExtendedTaskTicketResponse;
 
 import org.apache.commons.lang3.RandomStringUtils;
+
+import org.thesis.common.Tickets.ExtendedTaskTicket;
+import org.thesis.common.Tickets.TaskTicket;
 
 import javax.annotation.PostConstruct;
 
@@ -157,7 +161,7 @@ public class Functionary {
      * Метод HTTP POST
      * @param taskUUID UUID задачи из тела запроса
      * @param result результат валидации HTTP-запроса
-     * @return экземпляр расширенной задачи для компиляции прототипа {@link org.thesis.functionary.Tickets.ExtendedTaskTicket}
+     * @return экземпляр расширенной задачи для компиляции прототипа {@link org.thesis.common.Tickets.ExtendedTaskTicket}
      */
     @PostMapping(path = "/task_status", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ExtendedTaskTicketResponse listFullTaskStatus(@RequestBody String taskUUID, BindingResult result) {
