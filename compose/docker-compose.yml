@@ -8,6 +8,12 @@ services:
       default:
         aliases:
          - zookeeper
+    deploy:
+
+      placement:
+        constraints:
+          - node.hostname==native-d8
+
     ports:
       - "2181:2181"
       
@@ -29,6 +35,11 @@ services:
         aliases:
          - kafka
     deploy:
+
+      placement:
+        constraints:
+          - node.hostname==native-d8
+
       labels:
         feature.description: "Kafka"
       update_config:
@@ -63,6 +74,11 @@ services:
     expose:
       - "9000"
     deploy:
+
+      placement:
+        constraints:
+          - node.hostname==native-d8
+
       labels:
         feature.description: "Storage"
       update_config:
@@ -90,6 +106,11 @@ services:
       KAFKA_BROKER_ADDR: http://kafka:9094
       MINIO_ADDR: storage:9000
     deploy:
+
+      placement:
+        constraints:
+          - node.hostname==native-d8
+
       labels:
         feature.description: "Application server"
       update_config:
@@ -105,11 +126,11 @@ services:
     hostname: quadomizer
     image: thesis-quadomizer:latest
     ports:
-#     - target: 8081
-#       published: 8081
- #      protocol: tcp
-#       mode: host
-    - "8081:8081"
+     - target: 8081
+       published: 8081
+       protocol: tcp
+       mode: host
+#    - "8081:8081"
     expose:
      - "8081"
     networks:
@@ -121,6 +142,11 @@ services:
       MINIO_ADDR: storage:9000
       SERVER_PORT: 8081
     deploy:
+
+      placement:
+        constraints:
+          - node.hostname==native-d8
+
       labels:
         feature.description: "Dispatcher server"
       update_config:

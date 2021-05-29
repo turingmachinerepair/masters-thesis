@@ -1,5 +1,5 @@
 
-export HOME=/home/phdinintegrals
+export HOME=/root
 mkdir /tmp/s3mount0
 echo minioadmin:minioadmin > ${HOME}/.passwd-s3fs
 chmod 600 ${HOME}/.passwd-s3fs
