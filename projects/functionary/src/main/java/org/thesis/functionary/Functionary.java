@@ -135,7 +135,7 @@ public class Functionary {
             minioAdapter.putCompilationTaskTicket(compilationTask);
             System.out.println("Put task to minio");
             sendMessage(compilationTask.getUUID());
-            System.out.println("#EVENT\tTYPE:QUEUE_FPGA\tUUID:"+compilationTask.getUUID());
+            System.out.println("#EVENT\tTYPE:QUEUE_FPGA\tUUID:"+compilationTask.getUUID()+"\tTIMESTAMP:"+currentTimestamp());
             extendedTT.associateTask(compilationTask.getUUID());
             System.out.println("Created kafka message");
 
