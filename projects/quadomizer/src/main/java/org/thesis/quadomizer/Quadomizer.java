@@ -571,7 +571,7 @@ public class Quadomizer {
        taskContexts.remove(UUID);
 
        if( ticketRetranslate ){
-           System.out.println("#EVENT\tTYPE:FPGA_REQUEUE\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
+           System.out.println("#EVENT\tTYPE:FPGA_REQUEUE_CONTINUE\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
            sendMessage(UUID);
        } else {
            System.out.println("#EVENT\tTYPE:FPGA_FULL_END\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());

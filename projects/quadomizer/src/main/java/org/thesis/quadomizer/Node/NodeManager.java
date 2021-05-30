@@ -9,6 +9,7 @@ import org.thesis.common.Tickets.CompilationTaskDigest;
 import javax.xml.soap.Node;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -130,6 +131,12 @@ public class NodeManager{
             tasks.put(task.getTicket().getUUID(), nodeIndex );
             nodeName = node.getName();
             System.out.println("Can be deployed on "+nodeName );
+
+            System.out.println("#RES_EVENT\tTYPE:RESERVE_RESOURCES\tHOSTNAME:" + node.getName() +
+                    "\tCPU:"+node.getReservedCPU() +
+                    "\tRAM:" + node.getReservedRAM() +
+                    "\tTIMESTAMP:"+  (new Timestamp(System.currentTimeMillis()) ).toString());
+
         } else {
 
             System.out.println("No resources to deploy tasks." );
@@ -158,6 +165,11 @@ public class NodeManager{
 
         System.out.println("Post-free nodes: "+ nodes.toString() );
         System.out.println("Post-free tasks: "+ tasks.toString() );
+        NodeDescriptor node = nodes.get(nodeIndex);
+        System.out.println("#RES_EVENT\tTYPE:FREE_RESOURCES\tHOSTNAME:" + node.getName() +
+                "\tCPU:"+node.getReservedCPU() +
+                "\tRAM:" + node.getReservedRAM() +
+                "\tTIMESTAMP:"+  (new Timestamp(System.currentTimeMillis()) ).toString());
         opInProgress =false;
     }
     
