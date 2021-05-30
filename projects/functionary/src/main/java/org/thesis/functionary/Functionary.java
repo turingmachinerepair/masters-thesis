@@ -1,5 +1,6 @@
 package org.thesis.functionary;
 
+import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -95,6 +96,10 @@ public class Functionary {
     @Autowired
     TaskTicketValidator taskValidator = new TaskTicketValidator();
 
+    private String currentTimestamp(){
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        return timestamp.toString();
+    }
     /**
      * Метод, реализующий REST endpoint для создания новой задачи
      * Метод HTTP POST, в теле запроса JSON-строка с данными для задачи
@@ -113,6 +118,8 @@ public class Functionary {
         String[] compilationTaskNames = minioAdapter.resolveProjectTemplate(ticket.getTaskName());
         ExtendedTaskTicket extendedTT = new ExtendedTaskTicket(ticket);
 
+        System.out.println("#EVENT\tTYPE:CREATE_PROTO\tUUID:"+extendedTT.getUUID()+"\tTIMESTAMP:"+currentTimestamp());
+
         for (String projectName : compilationTaskNames) {
             String projectPath = minioAdapter.resolveProjectPath(ticket.getTaskName(), projectName);
             CompilationTaskTicket compilationTask = new CompilationTaskTicket(
@@ -122,10 +129,13 @@ public class Functionary {
                     projectPath, 4
             );
 
+            System.out.println("#EVENT\tTYPE:CREATE_FPGA\tUUID:"+compilationTask.getUUID()+"\tTIMESTAMP:"+currentTimestamp()+"\tASSOC_UUID:"+extendedTT.getUUID());
+
             System.out.println("Created " + compilationTask.toString() + " UUID:" + compilationTask.getUUID());
             minioAdapter.putCompilationTaskTicket(compilationTask);
             System.out.println("Put task to minio");
             sendMessage(compilationTask.getUUID());
+            System.out.println("#EVENT\tTYPE:QUEUE_FPGA\tUUID:"+compilationTask.getUUID());
             extendedTT.associateTask(compilationTask.getUUID());
             System.out.println("Created kafka message");
 

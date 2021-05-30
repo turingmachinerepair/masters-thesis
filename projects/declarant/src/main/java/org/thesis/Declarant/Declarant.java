@@ -25,7 +25,7 @@ class Declarant implements Callable<Integer> {
     public static final MediaType JSON
             = MediaType.get("application/json; charset=utf-8");
 
-    @CommandLine.Option(names = {"-a", "--address"}, description = "Адрес сервера")
+    @CommandLine.Option(names = {"-a", "--address"}, description = "Адрес сервера", required = true)
     private String IP = "MD5";
 
         @CommandLine.Option(names = {"-c", "--commit"}, description = "Создать задачу компиляции прототипа. Принимает файл с JSON-объектом описания задачи.")
@@ -35,7 +35,7 @@ class Declarant implements Callable<Integer> {
         boolean listRequested;
 
         @CommandLine.Option(names = {"-i", "--inspect"}, description = "Проверить задачу компиляции прототипа. Принимает UUID задачи.")
-        private String taskUUID;
+        private String taskUUID="";
 
     String list() throws IOException {
         String URL = IP+"/list_tasks";
@@ -44,14 +44,12 @@ class Declarant implements Callable<Integer> {
                 .url(URL)
                 .get()
                 .build();
-
         try (Response response = client.newCall(request).execute()) {
             //get
             String data = response.body().string();
             //deser
             Gson gson = new Gson();
             String[] tt = gson.fromJson(data, String[].class);
-		System.out.println(tt.toString());
             //format
             AsciiTable at = new AsciiTable();
 
@@ -130,11 +128,11 @@ class Declarant implements Callable<Integer> {
             res = list();
         } else if ( !JSONFile.isEmpty() ){
             res = commit( JSONFile );
-        } else if ( !taskUUID.isEmpty() ){
-            res = inspect(taskUUID);
+        } else if ( !this.taskUUID.isEmpty() ){
+            res = inspect(this.taskUUID);
         }
 
-        System.out.println("Результат:\n"+res);
+        System.out.println("Результат: "+res);
         return 0;
     }
 

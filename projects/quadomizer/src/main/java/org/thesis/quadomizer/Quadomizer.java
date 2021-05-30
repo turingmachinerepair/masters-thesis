@@ -245,6 +245,10 @@ public class Quadomizer {
         return res;
     }
 
+    private String currentTimestamp(){
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        return timestamp.toString();
+    }
     /**
      * Метод-подписчик брокера Kafka, тема TaskFabric
      * Чтение UUID задач которые находятся в очереди на исполнение
@@ -259,16 +263,23 @@ public class Quadomizer {
 
         System.out.println("-------------------"+timestamp.toString()+"------------------------");
         System.out.println("Received task, UUID:"+UUID);
+        System.out.println("#EVENT\tTYPE:DEQUEUE_FPGA\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
         CompilationTaskTicket emptyTicket = new CompilationTaskTicket();
         CompilationTaskTicket ticket = minioInstance.getCompilationTaskTicket(UUID);
         if( ticket.getUUID().equals(emptyTicket.getUUID() ) ){
             System.out.println("Kafka has obsolete task with UUID:"+UUID+", discard it.");
+            acknowledgment.acknowledge();
             return;
         }
+
+        System.out.println("#EVENT\tTYPE:FPGA_RESOURCE_ANALYSIS_END\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
         CompilationTaskDigest digest = createDigestForTask(ticket);
         CompilationTaskContext taskContext = new CompilationTaskContext(ticket,digest);
+        System.out.println("#EVENT\tTYPE:FPGA_RESOURCE_ANALYSIS_END\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
+
         System.out.println("Full task context:"+taskContext.toString());
         String hostname = "";
+        System.out.println("#EVENT\tTYPE:FPGA_DEPLOY_EVAL_START\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
         try{
             synchronized (resourceManager){
 
@@ -284,8 +295,9 @@ public class Quadomizer {
             System.out.println( e.toString() );
             hostname = "";
         }
+        System.out.println("#EVENT\tTYPE:FPGA_DEPLOY_EVAL_END\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
 
-
+        System.out.println("#EVENT\tTYPE:FPGA_DEPLOY_ATTEMPT_START\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
         boolean deploymentPossible = ( !hostname.isEmpty() );
         boolean deploymentSuccessful = false;
         if( deploymentPossible ){
@@ -293,6 +305,7 @@ public class Quadomizer {
             System.out.println("Resource manager snapshot:"+resourceManager.toString());
             deploymentSuccessful = this.deployTask(taskContext,hostname);
         }
+        System.out.println("#EVENT\tTYPE:FPGA_DEPLOY_ATTEMPT_END\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
 
         if( deploymentPossible && !deploymentSuccessful ){
             System.out.println("Resources were allocated, but deployment unsuccessful. Return resources.");
@@ -314,9 +327,11 @@ public class Quadomizer {
 
 
             System.out.println("NACK teh message.");
+            System.out.println("#EVENT\tTYPE:FPGA_REQUEUE\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
             acknowledgment.nack(10);
 
         } else if( deploymentPossible && deploymentSuccessful ) {
+            System.out.println("#EVENT\tTYPE:FPGA_DEPLOYED\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
             System.out.println("Deployment succesful. Update ticket.");
             ticket.setCurrentState(STATES.PROCESSING);
             ticket.setHostname(hostname);
@@ -326,6 +341,7 @@ public class Quadomizer {
             acknowledgment.acknowledge();
         } else {
             System.out.println("Deployment impossible. NACK teh message.");
+            System.out.println("#EVENT\tTYPE:FPGA_REQUEUE\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
             //ticket.setCurrentState(STATES.QUEUED);
             //minioInstance.putCompilationTaskTicket(ticket);
             //sendMessage(UUID);
@@ -459,6 +475,7 @@ public class Quadomizer {
      */
     @PostMapping(path = "/task_finished", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public void updateTaskStatus(@RequestBody String UUID) {
+        System.out.println("#EVENT\tTYPE:FPGA_END\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
        System.out.println("Task "+UUID+" finished");
        //String containerID = assignedContainers.get(UUID);
 
@@ -554,7 +571,10 @@ public class Quadomizer {
        taskContexts.remove(UUID);
 
        if( ticketRetranslate ){
+           System.out.println("#EVENT\tTYPE:FPGA_REQUEUE\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
            sendMessage(UUID);
+       } else {
+           System.out.println("#EVENT\tTYPE:FPGA_FULL_END\tUUID:"+UUID+"\tTIMESTAMP:"+currentTimestamp());
        }
 
    }

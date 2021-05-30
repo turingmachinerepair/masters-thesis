@@ -8,7 +8,7 @@ RESPONSE_ADDR=$5
 
 echo "STEP 0 - define locals"
 echo "ARGS:"
-echo "PROJECT: ${PROJECT}"
+echo "PROJECTPATH: ${PROJECTPATH}"
 echo "PROJECTNAME: ${PROJECTNAME}"
 echo "FLOW: ${FLOW}"
 echo "UUID: ${UUID}"
@@ -16,7 +16,7 @@ echo "RESPONSE_ADDR ${RESPONSE_ADDR}"
 QUARTUS_DIR=/opt/quartus/quartus
 LOGS=/prototype_root/logs
 SRC_DIR=/prototype_root
-RES_DIR=/prototype_root/results/${PROJECTNAME}-${UUID}
+RES_DIR=/prototype_root/results/${UUID}
 
 echo "LOGS: ${LOGS}"
 echo "SRC_DIR: ${SRC_DIR}"
@@ -30,7 +30,7 @@ mkdir -p ${LOGS}
 mkdir -p ${RES_DIR}
 mkdir -p /quartus-wd/processor_test/FPGA/
 mkdir -p /quartus-wd/library
-cp -r ${PROJECT} /quartus-wd/processor_test/FPGA/
+cp -r ${PROJECTPATH} /quartus-wd/processor_test/FPGA/
 cp -r ${SRC_DIR}/library /quartus-wd/library
 
 chmod 777 -R /quartus-wd/
@@ -56,7 +56,7 @@ cp -r /quartus-wd/processor_test/FPGA/${PROJECTNAME}/* ${RES_DIR}
 if [[ $RES -eq 0 ]];
 then
 	echo "Update working copy"
-	cp -r /quartus-wd/processor_test/FPGA/${PROJECTNAME}/* ${PROJECT}
+	cp -r /quartus-wd/processor_test/FPGA/${PROJECTNAME}/* ${PROJECTPATH}
 fi
 
 curl --header "Content-Type: application/json" \
